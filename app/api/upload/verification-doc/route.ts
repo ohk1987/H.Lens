@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
@@ -16,12 +16,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "파일을 선택해주세요." }, { status: 400 });
   }
 
-  // 파일 크기 제한 (5MB)
   if (file.size > 5 * 1024 * 1024) {
     return NextResponse.json({ error: "파일 크기는 5MB 이하만 가능합니다." }, { status: 400 });
   }
 
-  // 허용 파일 타입
   const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
   if (!allowedTypes.includes(file.type)) {
     return NextResponse.json(
@@ -30,8 +28,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const supabase = createClient();
   const ext = file.name.split(".").pop();
-  const fileName = `${user.id}/${Date.now()}.${ext}`;
+  const fileName = `${session.user.id}/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from("verification-docs")
@@ -44,15 +43,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  // 프로필에 URL 저장
   const { data: { publicUrl } } = supabase.storage
     .from("verification-docs")
     .getPublicUrl(fileName);
 
+  // users 테이블에 URL 저장
   await supabase
-    .from("profiles")
+    .from("users")
     .update({ business_card_url: publicUrl })
-    .eq("id", user.id);
+    .eq("id", session.user.id);
 
   return NextResponse.json({ success: true, url: publicUrl });
 }

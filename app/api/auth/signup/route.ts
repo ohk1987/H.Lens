@@ -8,28 +8,27 @@ export async function POST(request: NextRequest) {
   const {
     email,
     password,
-    nickname,
+    name,
     userType,
     companyEmail,
     agreedTerms,
   } = body as {
     email: string;
     password: string;
-    nickname: string;
+    name: string;
     userType: UserType;
     companyEmail?: string;
     agreedTerms?: boolean;
   };
 
-  // 기본 검증
-  if (!email || !password || !nickname || !userType) {
+  if (!email || !password || !name || !userType) {
     return NextResponse.json(
       { error: "필수 항목을 모두 입력해주세요." },
       { status: 400 }
     );
   }
 
-  // HR 담당자: 회사 이메일 검증
+  // HR 담당자: 회사 이메일 + 약관 동의 필수
   if (userType === "hr_manager") {
     if (!companyEmail || !isCompanyEmail(companyEmail)) {
       return NextResponse.json(
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 헤드헌터: 서치펌 이메일 검증
+  // 헤드헌터: 서치펌 이메일 필수
   if (userType === "headhunter") {
     if (!companyEmail || !isCompanyEmail(companyEmail)) {
       return NextResponse.json(
@@ -57,54 +56,58 @@ export async function POST(request: NextRequest) {
 
   const supabase = createClient();
 
-  // Supabase Auth로 사용자 생성
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        nickname,
-        user_type: userType,
-      },
-    },
-  });
+  // 중복 이메일 확인
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  if (!data.user) {
+  if (existing) {
     return NextResponse.json(
-      { error: "사용자 생성에 실패했습니다." },
-      { status: 500 }
+      { error: "이미 가입된 이메일입니다." },
+      { status: 409 }
     );
   }
 
-  // 프로필 추가 정보 업데이트
-  const updateData: Record<string, unknown> = {};
+  // Supabase Auth로 사용자 생성 (비밀번호 로그인용)
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+  });
 
-  if (companyEmail) {
-    updateData.company_email = companyEmail;
+  if (authError) {
+    return NextResponse.json({ error: authError.message }, { status: 400 });
   }
 
-  if (agreedTerms) {
-    updateData.agreed_terms_at = new Date().toISOString();
-  }
+  // users 테이블에 레코드 생성
+  const status = userType === "headhunter" ? "pending" : "active";
 
-  if (Object.keys(updateData).length > 0) {
-    await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", data.user.id);
+  const insertData: Record<string, unknown> = {
+    email,
+    name,
+    user_type: userType,
+    status,
+  };
+
+  if (companyEmail) insertData.company_email = companyEmail;
+  if (agreedTerms) insertData.agreed_terms_at = new Date().toISOString();
+
+  const { error: insertError } = await supabase
+    .from("users")
+    .insert(insertData);
+
+  if (insertError) {
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
   return NextResponse.json({
     success: true,
-    userId: data.user.id,
-    status: userType === "headhunter" ? "pending" : "active",
+    userId: authData.user?.id,
+    status,
     message:
       userType === "headhunter"
         ? "회원가입이 완료되었습니다. 관리자 승인 후 활성화됩니다."
-        : "회원가입이 완료되었습니다. 이메일을 확인해주세요.",
+        : "회원가입이 완료되었습니다.",
   });
 }

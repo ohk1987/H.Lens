@@ -1,6 +1,5 @@
 import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import KakaoProvider from "next-auth/providers/kakao";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,10 +8,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    KakaoProvider({
-      clientId: process.env.KAKAO_CLIENT_ID!,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
     }),
     CredentialsProvider({
       name: "Email",
@@ -24,27 +19,30 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const supabase = createClient();
-        const { data, error } = await supabase.auth.signInWithPassword({
+
+        // users 테이블에서 조회
+        const { data: user } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", credentials.email)
+          .single();
+
+        if (!user) return null;
+
+        // 비밀번호 검증 (Supabase Auth 사용)
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
         });
 
-        if (error || !data.user) return null;
-
-        // 프로필 조회
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .single();
+        if (error || !authData.user) return null;
 
         return {
-          id: data.user.id,
-          email: data.user.email!,
-          name: profile?.nickname || data.user.email,
-          image: profile?.avatar_url,
-          userType: profile?.user_type || "job_seeker",
-          status: profile?.status || "active",
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          userType: user.user_type || null,
+          status: user.status || "active",
         };
       },
     }),
@@ -52,63 +50,60 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      // 소셜 로그인 시 Supabase에 사용자 동기화
-      if (account?.provider && account.provider !== "credentials") {
+      if (account?.provider === "google") {
         const supabase = createClient();
 
-        // 기존 프로필 확인
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("id")
+        // 기존 사용자 확인
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("id, user_type, status")
           .eq("email", user.email!)
           .single();
 
-        if (!existingProfile) {
-          // Supabase Auth로 사용자 생성 (소셜 로그인 연동)
-          const { data: authData, error: authError } = await supabase.auth.admin?.createUser({
-            email: user.email!,
-            email_confirm: true,
-            user_metadata: {
-              nickname: user.name || "",
-              avatar_url: user.image || "",
-              provider: account.provider,
-            },
-          }) ?? { data: null, error: null };
-
-          if (authError || !authData?.user) {
-            // admin API가 없는 경우 (클라이언트 사이드),
-            // signUp으로 fallback
-            const { error: signUpError } = await supabase.auth.signUp({
+        if (!existingUser) {
+          // 신규 사용자 생성 (user_type은 NULL → 온보딩 페이지에서 선택)
+          const { error } = await supabase
+            .from("users")
+            .insert({
               email: user.email!,
-              password: crypto.randomUUID(),
-              options: {
-                data: {
-                  nickname: user.name || "",
-                  avatar_url: user.image || "",
-                  provider: account.provider,
-                },
-              },
+              name: user.name || "",
             });
-            if (signUpError) {
-              console.error("Social sign up error:", signUpError);
-            }
+
+          if (error) {
+            console.error("User creation error:", error);
+            return false;
           }
         }
       }
-
       return true;
     },
 
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.userType = (user as unknown as Record<string, unknown>).userType as string;
-        token.status = (user as unknown as Record<string, unknown>).status as string;
+        token.userType = ((user as unknown as Record<string, unknown>).userType as string) || undefined;
+        token.status = ((user as unknown as Record<string, unknown>).status as string) || undefined;
       }
 
-      // 세션 업데이트 요청 시 DB에서 최신 정보 갱신
+      // 세션 업데이트 요청 시 (온보딩 완료 등)
       if (trigger === "update" && session) {
-        token.userType = session.userType;
-        token.status = session.status;
+        if (session.userType !== undefined) token.userType = session.userType;
+        if (session.status !== undefined) token.status = session.status;
+      }
+
+      // 소셜 로그인 시 DB에서 user_type/status 동기화
+      if (!token.userType && token.email) {
+        const supabase = createClient();
+        const { data: dbUser } = await supabase
+          .from("users")
+          .select("id, user_type, status")
+          .eq("email", token.email)
+          .single();
+
+        if (dbUser) {
+          token.sub = dbUser.id;
+          token.userType = dbUser.user_type;
+          token.status = dbUser.status;
+        }
       }
 
       return token;
@@ -117,8 +112,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub!;
-        session.user.userType = token.userType as string;
-        session.user.status = token.status as string;
+        session.user.userType = (token.userType as string) || "";
+        session.user.status = (token.status as string) || "active";
       }
       return session;
     },
@@ -126,7 +121,6 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: "/login",
-    newUser: "/signup",
     error: "/login",
   },
 
