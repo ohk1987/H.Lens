@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --muted: #6b7280;
+  --muted-bg: #f3f4f6;
+}
+
+.dark {
+  --background: #0a0f1a;
+  --foreground: #f0f2f5;
+  --card-bg: #111827;
+  --card-border: #1f2937;
+  --muted: #9ca3af;
+  --muted-bg: #1f2937;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 스크롤 애니메이션 기본 상태 */
+.scroll-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 스크롤바 스타일 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 그라데이션 텍스트 */
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero 배경 그라데이션 */
+.hero-gradient {
+  background: linear-gradient(135deg, #0F1F3D 0%, #1a3468 50%, #2a4a8c 100%);
+}
+
+.dark .hero-gradient {
+  background: linear-gradient(135deg, #050a14 0%, #0F1F3D 50%, #1a3468 100%);
+}
+
+/* 카드 호버 효과 */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+}
