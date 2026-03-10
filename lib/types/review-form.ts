@@ -23,6 +23,8 @@ export interface ReviewFormData {
   // Step 2: 기본 정보
   contactDate: string;
   contactChannel: string;
+  contactChannelDetail: string;
+  contactChannelCustom: string;
   companyName: string;
   industry: string;
   jobFunction: string;
@@ -57,6 +59,8 @@ export const INITIAL_FORM_DATA: ReviewFormData = {
 
   contactDate: "",
   contactChannel: "",
+  contactChannelDetail: "",
+  contactChannelCustom: "",
   companyName: "",
   industry: "",
   jobFunction: "",

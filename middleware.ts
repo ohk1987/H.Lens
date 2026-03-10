@@ -37,8 +37,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 로그인 후 user_type 없으면 온보딩으로 리다이렉트 (홈 포함)
-  if (token && !token.userType && pathname === '/') {
+  // 로그인 후 user_type 없으면 온보딩으로 리다이렉트
+  const isOnboarding = pathname.startsWith('/onboarding');
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  if (token && !token.userType && !isOnboarding && !isAuthPage) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 

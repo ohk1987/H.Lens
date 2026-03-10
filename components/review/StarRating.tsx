@@ -7,15 +7,17 @@ interface Props {
   value: number;
   onChange: (value: number) => void;
   guide?: string;
+  scoreGuides?: Record<number, string>;
   halfStep?: boolean;
 }
 
-export default function StarRating({ label, value, onChange, guide, halfStep }: Props) {
+export default function StarRating({ label, value, onChange, guide, scoreGuides, halfStep }: Props) {
   const [hover, setHover] = useState(0);
 
-  const stars = halfStep
-    ? [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
-    : [1, 2, 3, 4, 5];
+  const activeScore = hover || value;
+  const displayGuide = scoreGuides
+    ? scoreGuides[halfStep ? Math.ceil(activeScore) : Math.round(activeScore)]
+    : guide;
 
   if (halfStep) {
     return (
@@ -24,7 +26,11 @@ export default function StarRating({ label, value, onChange, guide, halfStep }: 
           <span className="text-sm font-semibold text-[var(--foreground)]">{label}</span>
           <span className="text-sm font-bold text-primary-600">{value > 0 ? value.toFixed(1) : "-"}</span>
         </div>
-        {guide && <p className="text-xs text-[var(--muted)]">{guide}</p>}
+        {displayGuide && (
+          <p className={`text-xs leading-relaxed ${hover > 0 ? "text-primary-600 font-medium" : "text-[var(--muted)]"}`}>
+            {displayGuide}
+          </p>
+        )}
         <div className="flex gap-0.5">
           {[1, 2, 3, 4, 5].map((star) => (
             <div key={star} className="relative cursor-pointer">
@@ -83,9 +89,13 @@ export default function StarRating({ label, value, onChange, guide, halfStep }: 
         <span className="text-sm font-semibold text-[var(--foreground)]">{label}</span>
         <span className="text-sm font-bold text-primary-600">{value > 0 ? `${value}/5` : "-"}</span>
       </div>
-      {guide && <p className="text-xs text-[var(--muted)] leading-relaxed">{guide}</p>}
+      {displayGuide && (
+        <p className={`text-xs leading-relaxed ${hover > 0 ? "text-primary-600 font-medium" : "text-[var(--muted)]"}`}>
+          {displayGuide}
+        </p>
+      )}
       <div className="flex gap-1">
-        {stars.map((star) => (
+        {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type="button"

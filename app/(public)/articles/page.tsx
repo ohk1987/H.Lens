@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MOCK_ARTICLES } from "@/lib/mock-articles";
-import type { ArticleTargetType } from "@/lib/types";
+import type { Article, ArticleTargetType } from "@/lib/types";
 import ArticleCard from "@/components/article/ArticleCard";
 
 type TabType = ArticleTargetType | "all_tab";
@@ -16,9 +16,28 @@ const TABS: { key: TabType; label: string }[] = [
 
 export default function ArticlesPage() {
   const [tab, setTab] = useState<TabType>("all_tab");
+  const [articles, setArticles] = useState<Article[]>(MOCK_ARTICLES);
+
+  useEffect(() => {
+    // Supabase에서 아티클 조회 시도, 실패 시 mock 데이터 유지
+    async function fetchArticles() {
+      try {
+        const res = await fetch("/api/articles");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.articles && data.articles.length > 0) {
+            setArticles(data.articles);
+          }
+        }
+      } catch {
+        // mock 데이터 유지
+      }
+    }
+    fetchArticles();
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...MOCK_ARTICLES];
+    let list = [...articles];
 
     if (tab !== "all_tab") {
       list = list.filter(
@@ -30,7 +49,7 @@ export default function ArticlesPage() {
       (a, b) =>
         new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     );
-  }, [tab]);
+  }, [tab, articles]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">

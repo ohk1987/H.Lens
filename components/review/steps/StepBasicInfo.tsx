@@ -3,6 +3,7 @@
 import type { ReviewFormData } from "@/lib/types/review-form";
 import {
   CONTACT_CHANNELS,
+  JOBSITE_SUB_OPTIONS,
   INDUSTRIES,
   JOB_FUNCTIONS,
   SENIORITY_LEVELS,
@@ -27,7 +28,7 @@ export default function StepBasicInfo({ data, onChange }: Props) {
           value={data.contactDate}
           onChange={(e) => onChange({ contactDate: e.target.value })}
           max={new Date().toISOString().split("T")[0]}
-          className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] focus:ring-2 focus:ring-primary-500 outline-none"
+          className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] focus:ring-2 focus:ring-primary-500 outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         />
       </div>
 
@@ -41,7 +42,7 @@ export default function StepBasicInfo({ data, onChange }: Props) {
             <button
               key={ch.value}
               type="button"
-              onClick={() => onChange({ contactChannel: ch.value })}
+              onClick={() => onChange({ contactChannel: ch.value, contactChannelDetail: "" })}
               className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                 data.contactChannel === ch.value
                   ? "border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20"
@@ -52,6 +53,38 @@ export default function StepBasicInfo({ data, onChange }: Props) {
             </button>
           ))}
         </div>
+
+        {/* 채용플랫폼 세부 선택 */}
+        {data.contactChannel === "jobsite" && (
+          <div className="mt-3 ml-2 space-y-2">
+            <p className="text-xs text-[var(--muted)] mb-2">플랫폼을 선택해주세요</p>
+            <div className="grid grid-cols-2 gap-2">
+              {JOBSITE_SUB_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onChange({ contactChannelDetail: opt.value })}
+                  className={`px-3 py-2 rounded-lg border text-sm transition ${
+                    data.contactChannelDetail === opt.value
+                      ? "border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20"
+                      : "border-[var(--card-border)] bg-[var(--muted-bg)] text-[var(--muted)] hover:border-primary-300"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {data.contactChannelDetail === "jobsite_other" && (
+              <input
+                type="text"
+                value={data.contactChannelCustom || ""}
+                onChange={(e) => onChange({ contactChannelCustom: e.target.value })}
+                className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted)] focus:ring-2 focus:ring-primary-500 outline-none mt-2"
+                placeholder="플랫폼명을 입력하세요"
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* 회사명 */}
@@ -66,7 +99,7 @@ export default function StepBasicInfo({ data, onChange }: Props) {
           className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted)] focus:ring-2 focus:ring-primary-500 outline-none"
           placeholder="제안받은 회사명"
         />
-        <p className="text-xs text-[var(--muted)] mt-1.5 flex items-center gap-1">
+        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1 font-medium">
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>

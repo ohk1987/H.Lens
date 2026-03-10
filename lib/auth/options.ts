@@ -80,10 +80,15 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.userType = ((user as unknown as Record<string, unknown>).userType as string) || undefined;
         token.status = ((user as unknown as Record<string, unknown>).status as string) || undefined;
+      }
+
+      // 로그인 시 provider 저장
+      if (account) {
+        token.provider = account.provider;
       }
 
       // 세션 업데이트 요청 시 (온보딩 완료 등)
@@ -92,7 +97,7 @@ export const authOptions: NextAuthOptions = {
         if (session.status !== undefined) token.status = session.status;
       }
 
-      // 소셜 로그인 시 DB에서 user_type/status 동기화
+      // DB에서 user_type/status 동기화
       if (!token.userType && token.email) {
         const supabase = createClient();
         const { data: dbUser } = await supabase
@@ -116,6 +121,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!;
         session.user.userType = (token.userType as string) || "";
         session.user.status = (token.status as string) || "active";
+        session.user.provider = (token.provider as string) || "credentials";
       }
       return session;
     },

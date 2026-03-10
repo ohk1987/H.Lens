@@ -2,7 +2,7 @@
 
 import StarRating from "@/components/review/StarRating";
 import type { ReviewFormData, ReviewerRole } from "@/lib/types/review-form";
-import { RATING_LABELS, CONTACT_CHANNELS, SENIORITY_LEVELS, PROGRESS_RESULTS } from "@/lib/review-constants";
+import { RATING_LABELS, CONTACT_CHANNELS, SENIORITY_LEVELS, PROGRESS_RESULTS, SCORE_GUIDES } from "@/lib/review-constants";
 import type { Ratings } from "@/lib/types";
 
 interface Props {
@@ -32,7 +32,7 @@ export default function StepSubmit({ data, onChange, reviewerRole }: Props) {
           value={data.overallRating}
           onChange={(v) => onChange({ overallRating: v })}
           halfStep
-          guide="이 헤드헌터에 대한 전반적인 만족도를 평가해주세요. (0.5점 단위)"
+          scoreGuides={SCORE_GUIDES.overall}
         />
       </div>
 

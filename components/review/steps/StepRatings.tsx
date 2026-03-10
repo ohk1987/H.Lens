@@ -3,7 +3,7 @@
 import StarRating from "@/components/review/StarRating";
 import type { ReviewFormData, ReviewerRole } from "@/lib/types/review-form";
 import type { Ratings } from "@/lib/types";
-import { RATING_GUIDES, RATING_LABELS, HR_EXTRA_RATING_LABELS } from "@/lib/review-constants";
+import { RATING_GUIDES, RATING_LABELS, HR_EXTRA_RATING_LABELS, SCORE_GUIDES } from "@/lib/review-constants";
 
 interface Props {
   data: ReviewFormData;
@@ -47,6 +47,7 @@ export default function StepRatings({ data, onChange, reviewerRole }: Props) {
               value={data.ratings[key]}
               onChange={(v) => updateRating(key, v)}
               guide={guides[key]}
+              scoreGuides={SCORE_GUIDES[key]}
             />
           </div>
         ))}

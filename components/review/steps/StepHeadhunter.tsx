@@ -46,10 +46,6 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
-        리뷰 대상 헤드헌터의 정보를 입력해주세요. 이메일/핸드폰으로 기존 등록된 헤드헌터를 자동 매칭합니다.
-      </div>
-
       {/* 헤드헌터 이름 */}
       <div>
         <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
@@ -130,12 +126,6 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
           <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-3">
             이 헤드헌터가 맞나요? 맞다면 그대로 진행해주세요.
           </p>
-        </div>
-      )}
-
-      {searchDone && !data.matchedHeadhunter && !searching && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-700 dark:text-amber-400">
-          기존 등록된 헤드헌터가 없습니다. 입력하신 정보로 신규 등록됩니다.
         </div>
       )}
 

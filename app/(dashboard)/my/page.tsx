@@ -3,6 +3,13 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth/options";
 import { createClient } from "@/lib/supabase/server";
 import { USER_TYPE_LABELS, USER_STATUS_LABELS } from "@/lib/constants";
+import Link from "next/link";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  google: "Google",
+  kakao: "카카오",
+  credentials: "이메일",
+};
 
 export default async function MyPage() {
   const session = await getServerSession(authOptions);
@@ -18,11 +25,34 @@ export default async function MyPage() {
     .eq("email", session.user.email)
     .single();
 
+  // 내가 작성한 리뷰 조회
+  const userId = profile?.id || session.user.id;
+  const { data: myReviews } = await supabase
+    .from("reviews")
+    .select(`
+      id,
+      rating_overall,
+      verification_status,
+      created_at,
+      headhunter_id,
+      headhunters (
+        name,
+        search_firm_id,
+        search_firms (
+          name
+        )
+      )
+    `)
+    .eq("reviewer_id", userId)
+    .order("created_at", { ascending: false });
+
   const statusColor = {
     active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     suspended: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
+
+  const providerLabel = PROVIDER_LABELS[session.user.provider] || session.user.provider;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -61,6 +91,10 @@ export default async function MyPage() {
             <p className="text-[var(--muted)] text-xs mb-1">이메일</p>
             <p className="text-[var(--foreground)]">{session.user.email}</p>
           </div>
+          <div className="bg-[var(--muted-bg)] rounded-xl p-4">
+            <p className="text-[var(--muted)] text-xs mb-1">로그인 방식</p>
+            <p className="text-[var(--foreground)]">{providerLabel}</p>
+          </div>
           {profile?.company_email && (
             <div className="bg-[var(--muted-bg)] rounded-xl p-4">
               <p className="text-[var(--muted)] text-xs mb-1">회사/서치펌 이메일</p>
@@ -89,7 +123,61 @@ export default async function MyPage() {
       {/* 내가 작성한 리뷰 */}
       <section className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6">
         <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">내가 작성한 리뷰</h2>
-        <p className="text-[var(--muted)] text-sm">작성한 리뷰가 없습니다.</p>
+        {myReviews && myReviews.length > 0 ? (
+          <div className="space-y-3">
+            {myReviews.map((review) => {
+              const hh = review.headhunters as unknown as { name: string; search_firms: { name: string } | null } | null;
+              return (
+                <Link
+                  key={review.id}
+                  href={`/headhunters/${review.headhunter_id}`}
+                  className="block bg-[var(--muted-bg)] rounded-xl p-4 hover:bg-[var(--card-border)] transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
+                        {hh?.name?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-[var(--foreground)] text-sm">
+                          {hh?.name || "알 수 없음"}
+                        </p>
+                        <p className="text-xs text-[var(--muted)]">
+                          {hh?.search_firms?.name || ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {review.verification_status === "verified" && (
+                        <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                          인증됨
+                        </span>
+                      )}
+                      {review.verification_status === "pending" && (
+                        <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                          검토 중
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                        <span className="text-sm font-bold text-[var(--foreground)]">
+                          {review.rating_overall}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-2">
+                    {new Date(review.created_at).toLocaleDateString("ko-KR")}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[var(--muted)] text-sm">작성한 리뷰가 없습니다.</p>
+        )}
       </section>
     </div>
   );
