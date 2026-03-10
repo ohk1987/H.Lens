@@ -55,7 +55,7 @@ export default function StepBasicInfo({ data, onChange }: Props) {
         </div>
 
         {/* 채용플랫폼 세부 선택 */}
-        {data.contactChannel === "jobsite" && (
+        {data.contactChannel === "job_site" && (
           <div className="mt-3 ml-2 space-y-2">
             <p className="text-xs text-[var(--muted)] mb-2">플랫폼을 선택해주세요</p>
             <div className="grid grid-cols-2 gap-2">

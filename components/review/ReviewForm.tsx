@@ -102,13 +102,56 @@ export default function ReviewForm({ searchFirms }: Props) {
     setError("");
 
     try {
-      // TODO: Supabase에 리뷰 저장 API 호출
-      // 1. 헤드헌터 없으면 신규 생성
-      // 2. 리뷰 저장
-      // 3. 증빙 파일 업로드
+      // 1. 증빙 파일 업로드 (있는 경우)
+      let evidenceFileUrl: string | null = null;
+      if (formData.evidenceFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", formData.evidenceFile);
+        const uploadRes = await fetch("/api/upload/verification-doc", {
+          method: "POST",
+          body: uploadFormData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          evidenceFileUrl = uploadData.url;
+        }
+      }
 
-      // 현재는 시뮬레이션
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // 2. 리뷰 저장 API 호출
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headhunterId: formData.headhunterId,
+          headhunterName: formData.headhunterName,
+          headhunterEmail: formData.headhunterEmail,
+          headhunterPhone: formData.headhunterPhone,
+          searchFirmId: formData.searchFirmId,
+          contactDate: formData.contactDate,
+          contactChannel: formData.contactChannel,
+          companyName: formData.companyName,
+          industry: formData.industry,
+          jobFunction: formData.jobFunction,
+          seniority: formData.seniority,
+          progressResult: formData.progressResult,
+          ratings: formData.ratings,
+          hrExtraRatings: reviewerRole === "hr_manager" ? formData.hrExtraRatings : null,
+          keywordsPositive: formData.keywordsPositive,
+          keywordsNegative: formData.keywordsNegative,
+          content: formData.content,
+          overallRating: formData.overallRating,
+          wouldRecommend: formData.wouldRecommend,
+          evidenceFileUrl,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "리뷰 제출에 실패했습니다.");
+        setSubmitting(false);
+        return;
+      }
+
       setSubmitted(true);
     } catch {
       setError("리뷰 제출 중 오류가 발생했습니다. 다시 시도해주세요.");

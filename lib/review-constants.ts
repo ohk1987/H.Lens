@@ -12,7 +12,7 @@ export const CONTACT_CHANNELS = [
   { value: "linkedin", label: "LinkedIn" },
   { value: "email", label: "이메일" },
   { value: "phone", label: "전화" },
-  { value: "jobsite", label: "채용플랫폼" },
+  { value: "job_site", label: "채용플랫폼" },
   { value: "referral", label: "지인 소개" },
   { value: "other", label: "기타" },
 ];
@@ -54,9 +54,9 @@ export const SENIORITY_LEVELS = [
 
 export const PROGRESS_RESULTS = [
   { value: "in_progress", label: "진행 중" },
-  { value: "accepted", label: "최종 합격" },
+  { value: "hired", label: "최종 합격" },
   { value: "rejected", label: "최종 불합격" },
-  { value: "withdrawn", label: "중도 포기" },
+  { value: "dropped", label: "중도 포기" },
 ];
 
 // ===== 평점 가이드 문구 =====

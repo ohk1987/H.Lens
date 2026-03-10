@@ -47,7 +47,7 @@ export default function ArticlesPage() {
 
     return list.sort(
       (a, b) =>
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+        new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime()
     );
   }, [tab, articles]);
 

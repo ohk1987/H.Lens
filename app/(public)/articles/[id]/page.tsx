@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { MOCK_ARTICLES, TARGET_TYPE_LABELS } from "@/lib/mock-articles";
+import type { Article } from "@/lib/types";
 import ArticleCard from "@/components/article/ArticleCard";
 
 const targetColors: Record<string, string> = {
@@ -16,7 +18,26 @@ const targetColors: Record<string, string> = {
 export default function ArticleDetailPage() {
   const params = useParams();
   const articleId = params.id as string;
-  const article = MOCK_ARTICLES.find((a) => a.id === articleId);
+  const [articles, setArticles] = useState<Article[]>(MOCK_ARTICLES);
+
+  useEffect(() => {
+    async function fetchArticles() {
+      try {
+        const res = await fetch("/api/articles");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.articles && data.articles.length > 0) {
+            setArticles(data.articles);
+          }
+        }
+      } catch {
+        // mock 데이터 유지
+      }
+    }
+    fetchArticles();
+  }, []);
+
+  const article = articles.find((a) => a.id === articleId);
 
   if (!article) {
     return (
@@ -36,7 +57,7 @@ export default function ArticleDetailPage() {
   }
 
   // 관련 아티클: 같은 target_type 중 현재 아티클 제외, 최대 3개
-  const related = MOCK_ARTICLES.filter(
+  const related = articles.filter(
     (a) =>
       a.id !== article.id &&
       (a.target_type === article.target_type || a.target_type === "all")
