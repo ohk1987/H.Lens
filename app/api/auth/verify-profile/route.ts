@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
   const { companyEmail, agreedTerms } = await request.json();
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   const updateData: Record<string, unknown> = {};
 

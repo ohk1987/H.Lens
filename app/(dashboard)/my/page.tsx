@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth/options";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { USER_TYPE_LABELS, USER_STATUS_LABELS } from "@/lib/constants";
 import Link from "next/link";
 
@@ -18,7 +18,7 @@ export default async function MyPage() {
     redirect("/login");
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data: profile } = await supabase
     .from("users")
     .select("*")

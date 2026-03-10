@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 // 클레임 요청 생성
 export async function POST(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "헤드헌터 ID가 필요합니다." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   // 이미 클레임된 프로필인지 확인
   const { data: headhunter } = await supabase
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "이메일 또는 전화번호가 필요합니다." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   let query = supabase
     .from("headhunters")

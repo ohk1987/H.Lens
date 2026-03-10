@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import type { UserType } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -16,17 +16,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "유효하지 않은 사용자 유형입니다." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   const status = userType === "headhunter" ? "pending" : "active";
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("users")
     .update({ user_type: userType, status })
-    .eq("email", session.user.email);
+    .eq("email", session.user.email)
+    .select("id")
+    .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Onboarding update error:", error);
+    return NextResponse.json({ error: "사용자 유형 저장에 실패했습니다." }, { status: 500 });
+  }
+
+  if (!data) {
+    return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
   }
 
   return NextResponse.json({ success: true, status });

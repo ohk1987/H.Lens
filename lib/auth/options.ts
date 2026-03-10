@@ -2,7 +2,7 @@ import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import KakaoProvider from "next-auth/providers/kakao";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const supabase = createClient();
+        const supabase = createAdminClient();
 
         // users 테이블에서 조회
         const { data: user } = await supabase
@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "kakao") {
-        const supabase = createClient();
+        const supabase = createAdminClient();
 
         // 기존 사용자 확인
         const { data: existingUser } = await supabase
@@ -99,7 +99,7 @@ export const authOptions: NextAuthOptions = {
 
       // DB에서 user_type/status 동기화
       if (!token.userType && token.email) {
-        const supabase = createClient();
+        const supabase = createAdminClient();
         const { data: dbUser } = await supabase
           .from("users")
           .select("id, user_type, status")

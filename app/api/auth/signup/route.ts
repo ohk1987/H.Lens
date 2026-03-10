@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { isCompanyEmail } from "@/lib/types";
 import type { UserType } from "@/lib/types";
 import bcrypt from "bcryptjs";
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   // 중복 이메일 확인
   const { data: existing } = await supabase
