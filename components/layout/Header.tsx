@@ -25,6 +25,9 @@ export default function Header() {
           <Link href="/headhunters" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
             헤드헌터
           </Link>
+          <Link href="/articles" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
+            아티클
+          </Link>
           <Link href="/reviews/new" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
             리뷰 작성
           </Link>
@@ -88,6 +91,9 @@ export default function Header() {
         <nav className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-4 space-y-3">
           <Link href="/headhunters" className="block text-sm text-[var(--muted)] hover:text-primary-600">
             헤드헌터
+          </Link>
+          <Link href="/articles" className="block text-sm text-[var(--muted)] hover:text-primary-600">
+            아티클
           </Link>
           <Link href="/reviews/new" className="block text-sm text-[var(--muted)] hover:text-primary-600">
             리뷰 작성

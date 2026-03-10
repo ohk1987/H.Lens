@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 /**
  * 리뷰 작성 시 이메일 또는 전화번호로 기존 헤드헌터 매칭
@@ -15,7 +15,7 @@ export async function findOrCreateHeadhunter({
   phone?: string;
   searchFirmId?: string;
 }) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   // 1. 이메일로 매칭
   if (email) {
@@ -64,7 +64,7 @@ export async function findOrCreateHeadhunter({
  * 이메일로 매칭되는 unclaimed 헤드헌터 자동 검색
  */
 export async function findClaimableProfiles(email: string) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   const { data: profiles } = await supabase
     .from("headhunters")
@@ -87,7 +87,7 @@ export async function createClaimRequest({
   userId: string;
   evidenceUrl?: string;
 }) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   // 이미 클레임된 프로필인지 확인
   const { data: hunter } = await supabase

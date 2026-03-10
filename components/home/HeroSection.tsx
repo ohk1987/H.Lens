@@ -2,8 +2,18 @@
 
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
+import { useEffect, useState } from "react";
 
 export default function HeroSection() {
+  const [stats, setStats] = useState({ reviewCount: 0, headhunterCount: 0 });
+
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="hero-gradient relative overflow-hidden">
       {/* 배경 장식 */}
@@ -55,24 +65,18 @@ export default function HeroSection() {
           </div>
 
           {/* 신뢰 지표 */}
-          <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
+          <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto">
             <div className="text-center">
               <div className="text-2xl md:text-3xl font-bold text-white">
-                <CountUp end={1247} suffix="+" />
+                <CountUp end={stats.reviewCount} suffix="+" />
               </div>
               <div className="text-sm text-blue-300/70 mt-1">누적 리뷰</div>
             </div>
-            <div className="text-center border-x border-white/10">
+            <div className="text-center border-l border-white/10">
               <div className="text-2xl md:text-3xl font-bold text-white">
-                <CountUp end={340} suffix="+" />
+                <CountUp end={stats.headhunterCount} suffix="+" />
               </div>
               <div className="text-sm text-blue-300/70 mt-1">등록 헤드헌터</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-bold text-white">
-                <CountUp end={15000} suffix="+" />
-              </div>
-              <div className="text-sm text-blue-300/70 mt-1">월간 방문자</div>
             </div>
           </div>
         </div>

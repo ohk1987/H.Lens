@@ -1,22 +1,58 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { MOCK_HEADHUNTERS } from "@/lib/mock-data";
+import { useState, useMemo, useEffect } from "react";
+import type { Headhunter } from "@/lib/types";
 import HeadhunterCard from "@/components/headhunter/HeadhunterCard";
-
-const ALL_SPECIALTIES = Array.from(
-  new Set(MOCK_HEADHUNTERS.flatMap((h) => h.specialty_fields))
-).sort();
 
 type SortKey = "rating" | "reviews" | "recent";
 
+function SkeletonCard() {
+  return (
+    <div className="border border-[var(--card-border)] rounded-xl bg-[var(--card-bg)] p-5 animate-pulse">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 bg-[var(--muted-bg)] rounded-full" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-[var(--muted-bg)] rounded w-24" />
+          <div className="h-3 bg-[var(--muted-bg)] rounded w-32" />
+          <div className="flex gap-2 mt-2">
+            <div className="h-5 bg-[var(--muted-bg)] rounded w-14" />
+            <div className="h-5 bg-[var(--muted-bg)] rounded w-14" />
+          </div>
+          <div className="h-3 bg-[var(--muted-bg)] rounded w-40 mt-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HeadhuntersPage() {
+  const [headhunters, setHeadhunters] = useState<Headhunter[]>([]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [sort, setSort] = useState<SortKey>("rating");
 
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/headhunters");
+        if (res.ok) {
+          const data = await res.json();
+          setHeadhunters(data.headhunters || []);
+          setSpecialties(data.specialties || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch headhunters:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = [...MOCK_HEADHUNTERS];
+    let list = [...headhunters];
 
     if (search) {
       const q = search.toLowerCase();
@@ -38,7 +74,7 @@ export default function HeadhuntersPage() {
     });
 
     return list;
-  }, [search, specialty, sort]);
+  }, [headhunters, search, specialty, sort]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -65,7 +101,7 @@ export default function HeadhuntersPage() {
           className="bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)]"
         >
           <option value="">전체 분야</option>
-          {ALL_SPECIALTIES.map((s) => (
+          {specialties.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
@@ -81,7 +117,13 @@ export default function HeadhuntersPage() {
       </div>
 
       {/* 결과 */}
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((h) => (
             <HeadhunterCard key={h.id} headhunter={h} />
@@ -89,7 +131,9 @@ export default function HeadhuntersPage() {
         </div>
       ) : (
         <div className="text-center py-16">
-          <p className="text-[var(--muted)]">검색 결과가 없습니다.</p>
+          <p className="text-[var(--muted)]">
+            {headhunters.length === 0 ? "등록된 헤드헌터가 없습니다." : "검색 결과가 없습니다."}
+          </p>
         </div>
       )}
     </div>

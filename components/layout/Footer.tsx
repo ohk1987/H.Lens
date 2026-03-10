@@ -22,6 +22,7 @@ export default function Footer() {
             <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">서비스</h4>
             <ul className="space-y-2 text-sm text-[var(--muted)]">
               <li><Link href="/headhunters" className="hover:text-primary-600 transition">헤드헌터 찾기</Link></li>
+              <li><Link href="/articles" className="hover:text-primary-600 transition">아티클</Link></li>
               <li><Link href="/reviews/new" className="hover:text-primary-600 transition">리뷰 작성</Link></li>
               <li><Link href="/signup" className="hover:text-primary-600 transition">회원가입</Link></li>
             </ul>
@@ -31,9 +32,9 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">정보</h4>
             <ul className="space-y-2 text-sm text-[var(--muted)]">
-              <li><a href="#" className="hover:text-primary-600 transition">이용약관</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition">개인정보처리방침</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition">리뷰 가이드라인</a></li>
+              <li><Link href="/terms" className="hover:text-primary-600 transition">이용약관</Link></li>
+              <li><Link href="/privacy" className="hover:text-primary-600 transition">개인정보처리방침</Link></li>
+              <li><Link href="/review-guidelines" className="hover:text-primary-600 transition">리뷰 가이드라인</Link></li>
             </ul>
           </div>
 
@@ -41,9 +42,9 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">문의</h4>
             <ul className="space-y-2 text-sm text-[var(--muted)]">
-              <li><a href="#" className="hover:text-primary-600 transition">고객센터</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition">제휴 문의</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition">헤드헌터 등록</a></li>
+              <li><Link href="/support" className="hover:text-primary-600 transition">고객센터</Link></li>
+              <li><Link href="/partnership" className="hover:text-primary-600 transition">제휴 문의</Link></li>
+              <li><Link href="/headhunter-register" className="hover:text-primary-600 transition">헤드헌터 등록</Link></li>
             </ul>
           </div>
         </div>

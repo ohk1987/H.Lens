@@ -6,26 +6,11 @@ import { useEffect, useState } from "react";
 import ReviewForm from "@/components/review/ReviewForm";
 import type { SearchFirm } from "@/lib/types";
 
-// TODO: Supabase에서 로드. 현재는 mock
-const MOCK_SEARCH_FIRMS: SearchFirm[] = [
-  { id: "1", name: "로버트월터스 코리아", website: null, description: null, specialty_fields: ["IT/개발", "금융"], email_domain: "robertwalters.com", status: "active", created_at: "" },
-  { id: "2", name: "마이클페이지 코리아", website: null, description: null, specialty_fields: ["IT/개발", "금융"], email_domain: "michaelpage.com", status: "active", created_at: "" },
-  { id: "3", name: "헤이즈 코리아", website: null, description: null, specialty_fields: ["IT/개발", "엔지니어링"], email_domain: "hays.co.kr", status: "active", created_at: "" },
-  { id: "4", name: "맨파워그룹 코리아", website: null, description: null, specialty_fields: ["제조", "IT/개발"], email_domain: "manpowergroup.co.kr", status: "active", created_at: "" },
-  { id: "5", name: "커리어케어", website: null, description: null, specialty_fields: ["IT/개발", "제조"], email_domain: "careercare.co.kr", status: "active", created_at: "" },
-  { id: "6", name: "엘리트 서치", website: null, description: null, specialty_fields: ["IT/개발", "데이터"], email_domain: "elitesearch.co.kr", status: "active", created_at: "" },
-  { id: "7", name: "HRK", website: null, description: null, specialty_fields: ["IT/개발", "제조"], email_domain: "hrk.co.kr", status: "active", created_at: "" },
-  { id: "8", name: "유니코써치", website: null, description: null, specialty_fields: ["임원", "IT/개발"], email_domain: "unicosearch.com", status: "active", created_at: "" },
-  { id: "9", name: "콘페리", website: null, description: null, specialty_fields: ["경영/전략", "임원"], email_domain: "kornferry.com", status: "active", created_at: "" },
-  { id: "10", name: "랜스타드 코리아", website: null, description: null, specialty_fields: ["IT/개발", "제조"], email_domain: "randstad.co.kr", status: "active", created_at: "" },
-  { id: "11", name: "아이비커리어", website: null, description: null, specialty_fields: ["IT/개발", "스타트업"], email_domain: "ivycareer.co.kr", status: "active", created_at: "" },
-  { id: "12", name: "탤런트넷", website: null, description: null, specialty_fields: ["IT/개발", "게임"], email_domain: "talentnet.co.kr", status: "active", created_at: "" },
-];
-
 export default function NewReviewPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [searchFirms, setSearchFirms] = useState<SearchFirm[]>([]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -33,11 +18,30 @@ export default function NewReviewPage() {
       router.push("/login?callbackUrl=/reviews/new");
       return;
     }
-    // 헤드헌터 유형은 리뷰 작성 불가
     if (session.user.userType === "headhunter") {
       router.push("/my");
       return;
     }
+
+    // 서치펌 목록 로드
+    fetch("/api/search-firms")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.firms?.length > 0) {
+          setSearchFirms(data.firms.map((f: { id: string; name: string }) => ({
+            id: f.id,
+            name: f.name,
+            website: null,
+            description: null,
+            specialty_fields: [],
+            email_domain: null,
+            status: "active" as const,
+            created_at: "",
+          })));
+        }
+      })
+      .catch(() => {});
+
     setReady(true);
   }, [session, status, router]);
 
@@ -58,7 +62,7 @@ export default function NewReviewPage() {
           헤드헌터와의 경험을 공유해주세요. 모든 리뷰는 <strong>익명</strong>으로 처리됩니다.
         </p>
       </div>
-      <ReviewForm searchFirms={MOCK_SEARCH_FIRMS} />
+      <ReviewForm searchFirms={searchFirms} />
     </div>
   );
 }
