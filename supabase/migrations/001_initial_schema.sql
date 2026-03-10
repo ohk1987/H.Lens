@@ -46,6 +46,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
+  password_hash TEXT,  -- bcrypt 해시 (이메일 가입 시), 소셜 로그인은 NULL
   name TEXT NOT NULL DEFAULT '',
   user_type user_type,  -- NULL = 아직 유형 미선택 (소셜 로그인 직후)
   status user_status NOT NULL DEFAULT 'active',

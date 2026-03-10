@@ -1,13 +1,19 @@
 import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import KakaoProvider from "next-auth/providers/kakao";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createClient } from "@/lib/supabase/server";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    KakaoProvider({
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET || "",
     }),
     CredentialsProvider({
       name: "Email",
@@ -27,15 +33,11 @@ export const authOptions: NextAuthOptions = {
           .eq("email", credentials.email)
           .single();
 
-        if (!user) return null;
+        if (!user || !user.password_hash) return null;
 
-        // 비밀번호 검증 (Supabase Auth 사용)
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        });
-
-        if (error || !authData.user) return null;
+        // bcrypt로 비밀번호 검증
+        const isValid = await bcrypt.compare(credentials.password, user.password_hash);
+        if (!isValid) return null;
 
         return {
           id: user.id,
@@ -50,7 +52,7 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
+      if (account?.provider === "google" || account?.provider === "kakao") {
         const supabase = createClient();
 
         // 기존 사용자 확인

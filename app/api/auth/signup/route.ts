@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isCompanyEmail } from "@/lib/types";
 import type { UserType } from "@/lib/types";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
   if (!email || !password || !name || !userType) {
     return NextResponse.json(
       { error: "필수 항목을 모두 입력해주세요." },
+      { status: 400 }
+    );
+  }
+
+  if (password.length < 6) {
+    return NextResponse.json(
+      { error: "비밀번호는 6자 이상이어야 합니다." },
       { status: 400 }
     );
   }
@@ -70,15 +78,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Supabase Auth로 사용자 생성 (비밀번호 로그인용)
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 });
-  }
+  // 비밀번호 해시
+  const passwordHash = await bcrypt.hash(password, 12);
 
   // users 테이블에 레코드 생성
   const status = userType === "headhunter" ? "pending" : "active";
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
   const insertData: Record<string, unknown> = {
     email,
     name,
+    password_hash: passwordHash,
     user_type: userType,
     status,
   };
@@ -93,9 +95,11 @@ export async function POST(request: NextRequest) {
   if (companyEmail) insertData.company_email = companyEmail;
   if (agreedTerms) insertData.agreed_terms_at = new Date().toISOString();
 
-  const { error: insertError } = await supabase
+  const { data: newUser, error: insertError } = await supabase
     .from("users")
-    .insert(insertData);
+    .insert(insertData)
+    .select("id")
+    .single();
 
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    userId: authData.user?.id,
+    userId: newUser?.id,
     status,
     message:
       userType === "headhunter"
