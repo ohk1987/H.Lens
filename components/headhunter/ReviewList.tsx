@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { MOCK_REVIEWS, MOCK_HEADHUNTERS } from "@/lib/mock-data";
+import type { Review } from "@/lib/types";
 import ReviewCard from "./ReviewCard";
 
 interface Props {
@@ -12,27 +13,67 @@ interface Props {
 type TabType = "all" | "verified" | "general";
 type ReviewerFilter = "all" | "job_seeker" | "hr_manager";
 
+type ReviewWithMeta = Review & { headhunter_name: string; headhunter_firm: string };
+
 export default function ReviewList({ headhunterId }: Props) {
   const { data: session } = useSession();
   const [tab, setTab] = useState<TabType>("all");
   const [reviewerFilter, setReviewerFilter] = useState<ReviewerFilter>("all");
-  const [localReviews, setLocalReviews] = useState(MOCK_REVIEWS);
+  const [localReviews, setLocalReviews] = useState<ReviewWithMeta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
-  const hunter = MOCK_HEADHUNTERS.find((h) => h.id === headhunterId);
-  const isOwner = hunter?.is_claimed && session?.user?.userType === "headhunter";
+  useEffect(() => {
+    async function fetchReviews() {
+      // 1. API에서 조회 시도
+      try {
+        const res = await fetch(`/api/headhunters/${headhunterId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.reviews && data.reviews.length >= 0) {
+            setLocalReviews(data.reviews);
+            setIsOwner(
+              data.headhunter?.is_claimed &&
+              session?.user?.userType === "headhunter"
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Reviews API fetch failed, trying mock data:", err);
+      }
+
+      // 2. 실패 시 mock 데이터
+      const hunter = MOCK_HEADHUNTERS.find((h) => h.id === headhunterId);
+      const mockReviewsForHunter = MOCK_REVIEWS
+        .filter((r) => r.headhunter_id === headhunterId)
+        .map((r) => ({
+          ...r,
+          headhunter_name: hunter?.name || "",
+          headhunter_firm: hunter?.firm_name || "",
+        }));
+      setLocalReviews(mockReviewsForHunter);
+      setIsOwner(
+        (hunter?.is_claimed && session?.user?.userType === "headhunter") || false
+      );
+      setLoading(false);
+    }
+    fetchReviews();
+  }, [headhunterId, session]);
 
   const reviews = useMemo(() => {
-    let list = localReviews.filter((r) => r.headhunter_id === headhunterId);
+    let list = [...localReviews];
 
     if (tab === "verified") list = list.filter((r) => r.review_type === "verified");
     if (tab === "general") list = list.filter((r) => r.review_type === "general");
     if (reviewerFilter !== "all") list = list.filter((r) => r.reviewer_type === reviewerFilter);
 
     return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [localReviews, headhunterId, tab, reviewerFilter]);
+  }, [localReviews, tab, reviewerFilter]);
 
-  const allCount = localReviews.filter((r) => r.headhunter_id === headhunterId).length;
-  const verifiedCount = localReviews.filter((r) => r.headhunter_id === headhunterId && r.review_type === "verified").length;
+  const allCount = localReviews.length;
+  const verifiedCount = localReviews.filter((r) => r.review_type === "verified").length;
   const generalCount = allCount - verifiedCount;
 
   const handleReply = (reviewId: string, content: string) => {
@@ -48,6 +89,15 @@ export default function ReviewList({ headhunterId }: Props) {
     { key: "verified", label: "인증 리뷰", count: verifiedCount },
     { key: "general", label: "일반 리뷰", count: generalCount },
   ];
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <p className="text-[var(--muted)] text-sm">리뷰를 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -7,7 +7,8 @@ export const USER_TYPE_LABELS: Record<string, string> = {
 
 // 사용자 상태 라벨
 export const USER_STATUS_LABELS: Record<string, string> = {
-  pending: '승인 대기',
+  pending: '인증 대기중',
   active: '활성',
   suspended: '정지',
+  rejected: '인증 거절',
 };

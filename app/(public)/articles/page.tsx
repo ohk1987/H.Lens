@@ -16,22 +16,33 @@ const TABS: { key: TabType; label: string }[] = [
 
 export default function ArticlesPage() {
   const [tab, setTab] = useState<TabType>("all_tab");
-  const [articles, setArticles] = useState<Article[]>(MOCK_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Supabase에서 아티클 조회 시도, 실패 시 mock 데이터 유지
     async function fetchArticles() {
       try {
         const res = await fetch("/api/articles");
         if (res.ok) {
           const data = await res.json();
           if (data.articles && data.articles.length > 0) {
+            console.log(`[Articles] Loaded ${data.articles.length} articles from DB`);
             setArticles(data.articles);
+            setLoaded(true);
+            return;
+          } else {
+            console.log("[Articles] DB returned empty, using mock data");
           }
+        } else {
+          console.error("[Articles] API error:", res.status);
         }
-      } catch {
-        // mock 데이터 유지
+      } catch (err) {
+        console.error("[Articles] Fetch failed:", err);
       }
+
+      // Supabase 조회 실패 또는 빈 배열 → mock 데이터 사용
+      setArticles(MOCK_ARTICLES);
+      setLoaded(true);
     }
     fetchArticles();
   }, []);
@@ -78,7 +89,12 @@ export default function ArticlesPage() {
       </div>
 
       {/* 아티클 목록 */}
-      {filtered.length > 0 ? (
+      {!loaded ? (
+        <div className="text-center py-16">
+          <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-[var(--muted)] text-sm">아티클을 불러오는 중...</p>
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((article) => (
             <ArticleCard key={article.id} article={article} />

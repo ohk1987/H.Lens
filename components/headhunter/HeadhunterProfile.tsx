@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
 import { RATING_LABELS } from "@/lib/review-constants";
-import type { Ratings } from "@/lib/types";
+import type { Headhunter, Ratings } from "@/lib/types";
 import RatingRadarChart from "./RadarChart";
 import Link from "next/link";
 
@@ -17,9 +18,52 @@ const badgeConfig = {
 };
 
 export default function HeadhunterProfile({ id }: Props) {
-  const hunter = MOCK_HEADHUNTERS.find((h) => h.id === id);
+  const [hunter, setHunter] = useState<Headhunter | null>(null);
+  const [avgRatings, setAvgRatings] = useState<Ratings>({
+    professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!hunter) {
+  useEffect(() => {
+    async function fetchData() {
+      // 1. Supabase API에서 조회 시도
+      try {
+        const res = await fetch(`/api/headhunters/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHunter(data.headhunter);
+          setAvgRatings(data.avgRatings);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error("API fetch failed, trying mock data:", err);
+      }
+
+      // 2. 실패 시 mock 데이터에서 조회
+      const mockHunter = MOCK_HEADHUNTERS.find((h) => h.id === id);
+      if (mockHunter) {
+        setHunter(mockHunter);
+        setAvgRatings(getHeadhunterAvgRatings(id));
+      } else {
+        setNotFound(true);
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-8 h-8 border-3 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-[var(--muted)] text-sm">프로필을 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (notFound || !hunter) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">헤드헌터를 찾을 수 없습니다</h2>
@@ -28,7 +72,6 @@ export default function HeadhunterProfile({ id }: Props) {
     );
   }
 
-  const avgRatings = getHeadhunterAvgRatings(id);
   const badge = badgeConfig[hunter.trust_badge_level];
   const generalCount = hunter.review_count - hunter.verified_review_count;
 
@@ -69,11 +112,13 @@ export default function HeadhunterProfile({ id }: Props) {
             </p>
 
             {/* 전문 분야 */}
-            <div className="flex flex-wrap gap-2 mt-3">
-              {hunter.specialty_fields.map((f) => (
-                <span key={f} className="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-2.5 py-1 rounded-full">{f}</span>
-              ))}
-            </div>
+            {hunter.specialty_fields.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {hunter.specialty_fields.map((f) => (
+                  <span key={f} className="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-2.5 py-1 rounded-full">{f}</span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 통계 */}

@@ -46,10 +46,11 @@ export default async function MyPage() {
     .eq("reviewer_id", userId)
     .order("created_at", { ascending: false });
 
-  const statusColor = {
+  const statusColor: Record<string, string> = {
     active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     suspended: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
 
   const providerLabel = PROVIDER_LABELS[session.user.provider] || session.user.provider;
@@ -78,7 +79,7 @@ export default async function MyPage() {
                 {USER_TYPE_LABELS[profile?.user_type || session.user.userType] || "미설정"}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                statusColor[(profile?.status || session.user.status) as keyof typeof statusColor] || statusColor.active
+                statusColor[profile?.status || session.user.status] || statusColor.active
               }`}>
                 {USER_STATUS_LABELS[profile?.status || session.user.status] || "활성"}
               </span>
@@ -113,9 +114,18 @@ export default async function MyPage() {
       {/* 상태별 안내 */}
       {(profile?.status || session.user.status) === "pending" && (
         <section className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-6">
-          <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">승인 대기 중</h3>
+          <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">인증 대기중</h3>
           <p className="text-sm text-amber-700 dark:text-amber-400">
             제출하신 서류를 검토 중입니다. 1~2 영업일 내 승인 처리됩니다.
+          </p>
+        </section>
+      )}
+
+      {(profile?.status || session.user.status) === "rejected" && (
+        <section className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 mb-6">
+          <h3 className="font-semibold text-red-800 dark:text-red-300 mb-2">인증 거절</h3>
+          <p className="text-sm text-red-700 dark:text-red-400">
+            제출하신 서류 검토 결과 인증이 거절되었습니다. 서류를 다시 제출하시려면 고객센터로 문의해주세요.
           </p>
         </section>
       )}
