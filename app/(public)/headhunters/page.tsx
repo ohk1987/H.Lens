@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Headhunter } from "@/lib/types";
 import HeadhunterCard from "@/components/headhunter/HeadhunterCard";
+// TODO: 실제 데이터로 대체 예정
+import { MOCK_HEADHUNTERS } from "@/lib/mock-data";
 
 type SortKey = "rating" | "reviews" | "recent";
 
@@ -39,14 +41,22 @@ export default function HeadhuntersPage() {
         const res = await fetch("/api/headhunters");
         if (res.ok) {
           const data = await res.json();
-          setHeadhunters(data.headhunters || []);
-          setSpecialties(data.specialties || []);
+          if (data.headhunters && data.headhunters.length > 0) {
+            setHeadhunters(data.headhunters);
+            setSpecialties(data.specialties || []);
+            setLoading(false);
+            return;
+          }
         }
       } catch (err) {
         console.error("Failed to fetch headhunters:", err);
-      } finally {
-        setLoading(false);
       }
+
+      // DB 데이터가 없거나 조회 실패 → mock 데이터 fallback
+      setHeadhunters(MOCK_HEADHUNTERS);
+      const allFields = MOCK_HEADHUNTERS.flatMap((h) => h.specialty_fields);
+      setSpecialties(Array.from(new Set(allFields)));
+      setLoading(false);
     }
     fetchData();
   }, []);

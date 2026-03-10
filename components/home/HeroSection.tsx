@@ -3,6 +3,8 @@
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import { useEffect, useState } from "react";
+// TODO: 실제 데이터로 대체 예정
+import { MOCK_HEADHUNTERS, MOCK_REVIEWS } from "@/lib/mock-data";
 
 export default function HeroSection() {
   const [stats, setStats] = useState({ reviewCount: 0, headhunterCount: 0 });
@@ -10,8 +12,24 @@ export default function HeroSection() {
   useEffect(() => {
     fetch("/api/stats")
       .then((r) => r.json())
-      .then((data) => setStats(data))
-      .catch(() => {});
+      .then((data) => {
+        if (data.reviewCount > 0 || data.headhunterCount > 0) {
+          setStats(data);
+        } else {
+          // DB 데이터가 없으면 mock 데이터 fallback
+          setStats({
+            reviewCount: MOCK_REVIEWS.length,
+            headhunterCount: MOCK_HEADHUNTERS.length,
+          });
+        }
+      })
+      .catch(() => {
+        // 조회 실패 → mock 데이터 fallback
+        setStats({
+          reviewCount: MOCK_REVIEWS.length,
+          headhunterCount: MOCK_HEADHUNTERS.length,
+        });
+      });
   }, []);
 
   return (

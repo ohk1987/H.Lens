@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import ScrollSection from "@/components/ui/ScrollSection";
 import Link from "next/link";
+// TODO: 실제 데이터로 대체 예정
+import { MOCK_REVIEWS } from "@/lib/mock-data";
 
 interface RecentReview {
   id: string;
@@ -68,8 +70,46 @@ export default function LatestReviews() {
   useEffect(() => {
     fetch("/api/reviews/recent")
       .then((r) => r.json())
-      .then((data) => setReviews(data.reviews || []))
-      .catch(() => {})
+      .then((data) => {
+        if (data.reviews && data.reviews.length > 0) {
+          setReviews(data.reviews);
+        } else {
+          // DB 데이터가 없으면 mock 데이터 fallback
+          setReviews(
+            MOCK_REVIEWS.slice(0, 6).map((r) => ({
+              id: r.id,
+              headhunter_id: r.headhunter_id,
+              headhunter_name: r.headhunter_name,
+              headhunter_firm: r.headhunter_firm,
+              review_type: r.review_type,
+              rating_overall: Object.values(r.ratings).reduce((a, b) => a + b, 0) / 5,
+              ratings: r.ratings,
+              keywords_positive: r.keywords_positive,
+              content: r.content,
+              job_field: r.job_field,
+              created_at: r.created_at,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // 조회 실패 → mock 데이터 fallback
+        setReviews(
+          MOCK_REVIEWS.slice(0, 6).map((r) => ({
+            id: r.id,
+            headhunter_id: r.headhunter_id,
+            headhunter_name: r.headhunter_name,
+            headhunter_firm: r.headhunter_firm,
+            review_type: r.review_type,
+            rating_overall: Object.values(r.ratings).reduce((a, b) => a + b, 0) / 5,
+            ratings: r.ratings,
+            keywords_positive: r.keywords_positive,
+            content: r.content,
+            job_field: r.job_field,
+            created_at: r.created_at,
+          }))
+        );
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReviewForm from "@/components/review/ReviewForm";
 import type { SearchFirm } from "@/lib/types";
+// TODO: 실제 데이터로 대체 예정
+import { MOCK_FIRMS } from "@/lib/mock-data";
 
 export default function NewReviewPage() {
   const { data: session, status } = useSession();
@@ -38,9 +40,15 @@ export default function NewReviewPage() {
             status: "active" as const,
             created_at: "",
           })));
+        } else {
+          // DB 데이터가 없으면 mock 데이터 fallback
+          setSearchFirms(MOCK_FIRMS);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // 조회 실패 → mock 데이터 fallback
+        setSearchFirms(MOCK_FIRMS);
+      });
 
     setReady(true);
   }, [session, status, router]);

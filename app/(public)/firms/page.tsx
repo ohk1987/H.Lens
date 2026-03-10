@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import type { SearchFirm } from "@/lib/types";
 import Link from "next/link";
+// TODO: 실제 데이터로 대체 예정
+import { MOCK_FIRMS, getFirmStats } from "@/lib/mock-data";
 
 type SortKey = "name" | "rating" | "headhunters";
 
@@ -43,14 +45,26 @@ export default function FirmsPage() {
         const res = await fetch("/api/firms");
         if (res.ok) {
           const data = await res.json();
-          setFirms(data.firms || []);
-          setSpecialties(data.specialties || []);
+          if (data.firms && data.firms.length > 0) {
+            setFirms(data.firms);
+            setSpecialties(data.specialties || []);
+            setLoading(false);
+            return;
+          }
         }
       } catch (err) {
         console.error("Failed to fetch firms:", err);
-      } finally {
-        setLoading(false);
       }
+
+      // DB 데이터가 없거나 조회 실패 → mock 데이터 fallback
+      const mockFirmsWithStats: FirmWithStats[] = MOCK_FIRMS.map((f) => ({
+        ...f,
+        stats: getFirmStats(f.id),
+      }));
+      setFirms(mockFirmsWithStats);
+      const allFields = MOCK_FIRMS.flatMap((f) => f.specialty_fields);
+      setSpecialties(Array.from(new Set(allFields)));
+      setLoading(false);
     }
     fetchData();
   }, []);
