@@ -15,12 +15,6 @@ export default function HeroSection() {
 
       <div className="max-w-6xl mx-auto px-4 py-20 md:py-32 relative z-10">
         <div className="text-center max-w-3xl mx-auto">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 mb-8">
-            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-sm text-blue-200">베타 서비스 운영 중</span>
-          </div>
-
           {/* Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
             당신의 커리어를 바꿀

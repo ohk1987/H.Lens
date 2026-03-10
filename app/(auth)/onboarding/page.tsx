@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { UserType } from "@/lib/types";
@@ -46,10 +46,13 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
 
   // user_type 이미 있으면 홈으로
-  if (session?.user?.userType) {
-    router.replace("/");
-    return null;
-  }
+  useEffect(() => {
+    if (session?.user?.userType) {
+      router.replace("/");
+    }
+  }, [session, router]);
+
+  if (session?.user?.userType) return null;
 
   const handleSelect = async () => {
     if (!selected) return;
@@ -82,8 +85,7 @@ export default function OnboardingPage() {
       } else if (selected === "headhunter") {
         router.push("/onboarding/hh-verify");
       } else {
-        router.push("/");
-        router.refresh();
+        router.push("/welcome");
       }
     } catch {
       setError("오류가 발생했습니다. 다시 시도해주세요.");

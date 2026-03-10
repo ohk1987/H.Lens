@@ -10,6 +10,9 @@ export type ReviewType = 'verified' | 'general';
 // ===== 신뢰 배지 =====
 export type TrustBadgeLevel = 'none' | 'partial' | 'full';
 
+// ===== 인증 등급 =====
+export type VerificationLevel = 'none' | 'claimed' | 'verified';
+
 // ===== 서치펌 상태 =====
 export type FirmStatus = 'active' | 'inactive';
 
@@ -67,6 +70,7 @@ export interface Headhunter {
   email: string | null;
   claimed_by: string | null;
   is_claimed: boolean;
+  verification_level: VerificationLevel;
   created_at: string;
   // 조인 데이터
   search_firm?: SearchFirm;

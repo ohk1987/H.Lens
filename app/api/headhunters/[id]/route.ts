@@ -22,6 +22,7 @@ export async function GET(
       is_claimed,
       claimed_by,
       profile_image,
+      verification_level,
       created_at,
       search_firms (
         id,
@@ -94,7 +95,39 @@ export async function GET(
     status: string; created_at: string;
   } | null;
 
-  // 4. 프론트엔드 인터페이스에 맞게 매핑
+  // 4. 상위 % 계산 (리뷰 3개 이상인 경우)
+  let topPercentage: number | null = null;
+  if (reviewCount >= 3) {
+    // 전체 헤드헌터의 평균 평점 조회
+    const { data: allHunters } = await supabase
+      .from("reviews")
+      .select("headhunter_id, rating_overall");
+
+    if (allHunters && allHunters.length > 0) {
+      // 헤드헌터별 평균 평점 계산
+      const hunterAvgs = new Map<string, { sum: number; count: number }>();
+      for (const r of allHunters) {
+        const existing = hunterAvgs.get(r.headhunter_id) || { sum: 0, count: 0 };
+        existing.sum += r.rating_overall;
+        existing.count += 1;
+        hunterAvgs.set(r.headhunter_id, existing);
+      }
+
+      // 리뷰 3개 이상인 헤드헌터만 필터
+      const avgScores: number[] = [];
+      hunterAvgs.forEach((v) => {
+        if (v.count >= 3) avgScores.push(v.sum / v.count);
+      });
+
+      if (avgScores.length > 0) {
+        const higherCount = avgScores.filter((s) => s > totalRating).length;
+        topPercentage = Math.round(((higherCount + 1) / avgScores.length) * 100);
+        if (topPercentage < 1) topPercentage = 1;
+      }
+    }
+  }
+
+  // 5. 프론트엔드 인터페이스에 맞게 매핑
   const headhunterData = {
     id: hunter.id,
     name: hunter.name,
@@ -111,10 +144,11 @@ export async function GET(
     profile_image: hunter.profile_image,
     claimed_by: hunter.claimed_by,
     is_claimed: hunter.is_claimed,
+    verification_level: hunter.verification_level || "none",
     created_at: hunter.created_at,
   };
 
-  // 5. 리뷰 데이터 매핑
+  // 6. 리뷰 데이터 매핑
   const mappedReviews = reviewList.map((r) => ({
     id: r.id,
     headhunter_id: r.headhunter_id,
@@ -145,5 +179,6 @@ export async function GET(
     headhunter: headhunterData,
     reviews: mappedReviews,
     avgRatings,
+    topPercentage,
   });
 }

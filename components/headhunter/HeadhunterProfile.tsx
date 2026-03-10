@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
 import { RATING_LABELS } from "@/lib/review-constants";
-import type { Headhunter, Ratings } from "@/lib/types";
+import type { Headhunter, Ratings, VerificationLevel } from "@/lib/types";
 import RatingRadarChart from "./RadarChart";
 import Link from "next/link";
 
@@ -11,17 +11,42 @@ interface Props {
   id: string;
 }
 
-const badgeConfig = {
-  none: { label: "", color: "", icon: "" },
-  partial: { label: "부분 인증", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-  full: { label: "완전 인증", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+// 평가 항목 툴팁 설명
+const RATING_TOOLTIPS: Record<keyof Ratings, string> = {
+  professionalism: "직무/산업 이해도, 경력 파악 정확성, 포지션 매칭 적합성",
+  communication: "응답 속도, 의사소통 명확성, 질문 답변 충실도",
+  reliability: "정보 정확성, 약속 이행, 윤리적 행동",
+  support: "이력서/면접 지원, 연봉 협상 조언, 경력 개발 조언",
+  transparency: "기업/포지션 정보 제공, 프로세스 진행 공유, 피드백 전달",
 };
+
+// 인증 등급 배지 설정
+const verificationConfig: Record<VerificationLevel, { label: string; color: string }> = {
+  none: { label: "미인증", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  claimed: { label: "본인 인증", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  verified: { label: "재직 인증", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+};
+
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex ml-1 cursor-help">
+      <svg className="w-3.5 h-3.5 text-[var(--muted)] hover:text-primary-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+      </svg>
+      <span className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded-lg shadow-lg whitespace-nowrap z-50">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-900 dark:border-t-gray-700" />
+      </span>
+    </span>
+  );
+}
 
 export default function HeadhunterProfile({ id }: Props) {
   const [hunter, setHunter] = useState<Headhunter | null>(null);
   const [avgRatings, setAvgRatings] = useState<Ratings>({
     professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0,
   });
+  const [topPercentage, setTopPercentage] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -34,6 +59,7 @@ export default function HeadhunterProfile({ id }: Props) {
           const data = await res.json();
           setHunter(data.headhunter);
           setAvgRatings(data.avgRatings);
+          setTopPercentage(data.topPercentage ?? null);
           setLoading(false);
           return;
         }
@@ -72,7 +98,8 @@ export default function HeadhunterProfile({ id }: Props) {
     );
   }
 
-  const badge = badgeConfig[hunter.trust_badge_level];
+  const verificationLevel = hunter.verification_level || "none";
+  const verificationBadge = verificationConfig[verificationLevel];
   const generalCount = hunter.review_count - hunter.verified_review_count;
 
   return (
@@ -89,16 +116,9 @@ export default function HeadhunterProfile({ id }: Props) {
             {/* 이름 + 배지 */}
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">{hunter.name}</h1>
-              {hunter.trust_badge_level !== "none" && (
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${badge.color}`}>
-                  {badge.label}
-                </span>
-              )}
-              {hunter.is_claimed && (
-                <span className="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-1 rounded-full">
-                  클레임 완료
-                </span>
-              )}
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${verificationBadge.color}`}>
+                {verificationBadge.label}
+              </span>
             </div>
 
             {/* 서치펌 */}
@@ -131,6 +151,11 @@ export default function HeadhunterProfile({ id }: Props) {
                 <span className="text-2xl font-bold text-[var(--foreground)]">{hunter.total_rating.toFixed(1)}</span>
               </div>
               <p className="text-xs text-[var(--muted)]">종합 평점</p>
+              {topPercentage !== null && (
+                <p className="text-xs font-medium text-primary-600 mt-0.5">
+                  상위 {topPercentage}%
+                </p>
+              )}
             </div>
             <div>
               <p className="text-lg font-bold text-[var(--foreground)]">{hunter.review_count}</p>
@@ -158,14 +183,17 @@ export default function HeadhunterProfile({ id }: Props) {
           <RatingRadarChart ratings={avgRatings} />
         </div>
 
-        {/* 항목별 점수 바 */}
+        {/* 항목별 점수 바 + 툴팁 */}
         <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
           <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">항목별 평점</h3>
           <div className="space-y-4">
             {(Object.keys(RATING_LABELS) as (keyof Ratings)[]).map((key) => (
               <div key={key}>
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-[var(--muted)]">{RATING_LABELS[key]}</span>
+                  <span className="text-[var(--muted)] flex items-center">
+                    {RATING_LABELS[key]}
+                    <Tooltip text={RATING_TOOLTIPS[key]} />
+                  </span>
                   <span className="font-semibold text-[var(--foreground)]">{avgRatings[key]}</span>
                 </div>
                 <div className="h-2.5 bg-[var(--muted-bg)] rounded-full overflow-hidden">

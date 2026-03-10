@@ -42,8 +42,18 @@ export default function LatestReviews() {
             return (
               <ScrollSection key={review.id} delay={i * 100}>
                 <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 h-full card-hover">
-                  {/* 상단: 인증 배지 + 분야 */}
-                  <div className="flex items-center gap-2 mb-4">
+                  {/* 상단: 헤드헌터 정보 */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {review.headhunter_name.charAt(0)}
+                    </div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {review.headhunter_name} <span className="font-normal text-[var(--muted)]">·</span> <span className="font-normal text-[var(--muted)]">{review.headhunter_firm}</span>
+                    </p>
+                  </div>
+
+                  {/* 인증 배지 + 분야 */}
+                  <div className="flex items-center gap-2 mb-3">
                     <span
                       className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         review.review_type === "verified"
@@ -79,22 +89,9 @@ export default function LatestReviews() {
                   </div>
 
                   {/* 리뷰 내용 */}
-                  <p className="text-sm text-[var(--foreground)] leading-relaxed mb-4 line-clamp-3">
+                  <p className="text-sm text-[var(--foreground)] leading-relaxed line-clamp-3">
                     &ldquo;{review.content}&rdquo;
                   </p>
-
-                  {/* 하단: 헤드헌터 정보 */}
-                  <div className="pt-4 border-t border-[var(--card-border)] flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {review.headhunter_name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[var(--foreground)]">
-                        {review.headhunter_name}
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">{review.headhunter_firm}</p>
-                    </div>
-                  </div>
                 </div>
               </ScrollSection>
             );

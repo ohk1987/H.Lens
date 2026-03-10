@@ -32,6 +32,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: true,
+    verification_level: "claimed",
     created_at: "2024-01-15",
   },
   {
@@ -50,6 +51,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: true,
+    verification_level: "claimed",
     created_at: "2024-02-20",
   },
   {
@@ -68,6 +70,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: false,
+    verification_level: "none",
     created_at: "2024-03-10",
   },
   {
@@ -86,6 +89,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: false,
+    verification_level: "none",
     created_at: "2024-04-05",
   },
   {
@@ -104,6 +108,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: true,
+    verification_level: "claimed",
     created_at: "2024-05-12",
   },
   {
@@ -122,6 +127,7 @@ export const MOCK_HEADHUNTERS: Headhunter[] = [
     email: null,
     claimed_by: null,
     is_claimed: false,
+    verification_level: "none",
     created_at: "2024-06-01",
   },
 ];

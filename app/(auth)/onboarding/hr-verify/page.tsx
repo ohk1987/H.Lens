@@ -72,8 +72,7 @@ export default function HrVerifyPage() {
 
       // 세션 업데이트
       await update({ userType: "hr_manager", status: "active" });
-      router.push("/");
-      router.refresh();
+      router.push("/welcome");
     } catch {
       setError("오류가 발생했습니다.");
       setLoading(false);

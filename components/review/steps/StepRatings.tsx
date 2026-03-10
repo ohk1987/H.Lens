@@ -33,7 +33,7 @@ export default function StepRatings({ data, onChange, reviewerRole }: Props) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--muted)]">
-        각 항목에 대해 1~5점으로 평가해주세요. 가이드 문구를 참고하시면 더 정확한 평가가 가능합니다.
+        각 항목에 대해 0.5점 단위로 평가해주세요. 가이드 문구를 참고하시면 더 정확한 평가가 가능합니다.
       </p>
 
       <div className="space-y-6">
@@ -43,11 +43,12 @@ export default function StepRatings({ data, onChange, reviewerRole }: Props) {
             className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-4"
           >
             <StarRating
-              label={RATING_LABELS[key]}
+              label={`${RATING_LABELS[key]} *`}
               value={data.ratings[key]}
               onChange={(v) => updateRating(key, v)}
               guide={guides[key]}
               scoreGuides={SCORE_GUIDES[key]}
+              halfStep
             />
           </div>
         ))}
@@ -82,6 +83,7 @@ export default function StepRatings({ data, onChange, reviewerRole }: Props) {
                   label={HR_EXTRA_RATING_LABELS[key]}
                   value={data.hrExtraRatings[key]}
                   onChange={(v) => updateHrRating(key, v)}
+                  halfStep
                 />
               </div>
             ))}

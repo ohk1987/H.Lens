@@ -68,7 +68,7 @@ export default function HeadhunterVerifyPage() {
 
       // 세션 업데이트 (pending 상태)
       await update({ userType: "headhunter", status: "pending" });
-      router.push("/login?message=pending");
+      router.push("/welcome");
     } catch {
       setError("오류가 발생했습니다.");
       setLoading(false);

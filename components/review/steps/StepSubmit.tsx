@@ -28,7 +28,7 @@ export default function StepSubmit({ data, onChange, reviewerRole }: Props) {
       {/* 종합 평점 */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
         <StarRating
-          label="종합 평점"
+          label="종합 평점 *"
           value={data.overallRating}
           onChange={(v) => onChange({ overallRating: v })}
           halfStep
@@ -39,7 +39,7 @@ export default function StepSubmit({ data, onChange, reviewerRole }: Props) {
       {/* 추천 여부 */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
         <p className="text-sm font-semibold text-[var(--foreground)] mb-3">
-          이 헤드헌터를 추천하시겠습니까?
+          이 헤드헌터를 추천하시겠습니까? <span className="text-red-500">*</span>
         </p>
         <div className="flex gap-3">
           <button

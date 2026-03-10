@@ -18,16 +18,17 @@ interface Props {
 export default function StepBasicInfo({ data, onChange }: Props) {
   return (
     <div className="space-y-5">
-      {/* 컨택 일자 */}
+      {/* 포지션 제안 받은 날짜 */}
       <div>
         <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
-          컨택 일자 <span className="text-red-500">*</span>
+          포지션 제안 받은 날짜 <span className="text-red-500">*</span>
         </label>
         <input
           type="date"
           value={data.contactDate}
           onChange={(e) => onChange({ contactDate: e.target.value })}
           max={new Date().toISOString().split("T")[0]}
+          placeholder="제안을 받으신 날짜를 선택해주세요"
           className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] focus:ring-2 focus:ring-primary-500 outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         />
       </div>

@@ -30,7 +30,7 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-[var(--foreground)]">{label}</span>
-          <span className="text-sm font-bold text-primary-600">{value > 0 ? value.toFixed(1) : "-"}</span>
+          <span className="text-sm font-bold text-primary-600">{value > 0 ? `${value % 1 === 0 ? value : value.toFixed(1)}점` : "-"}</span>
         </div>
         {displayGuide && (
           <p className={`text-xs leading-relaxed min-h-[1.25rem] ${
@@ -92,7 +92,7 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-[var(--foreground)]">{label}</span>
-        <span className="text-sm font-bold text-primary-600">{value > 0 ? `${value}/5` : "-"}</span>
+        <span className="text-sm font-bold text-primary-600">{value > 0 ? `${value % 1 === 0 ? value : value.toFixed(1)}점` : "-"}</span>
       </div>
       {displayGuide && (
         <p className={`text-xs leading-relaxed min-h-[1.25rem] ${
