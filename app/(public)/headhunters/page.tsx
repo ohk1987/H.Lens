@@ -3,10 +3,16 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Headhunter } from "@/lib/types";
 import HeadhunterCard from "@/components/headhunter/HeadhunterCard";
+import { COMPANY_SIZES } from "@/lib/review-constants";
 // TODO: 실제 데이터로 대체 예정
 import { MOCK_HEADHUNTERS } from "@/lib/mock-data";
 
-type SortKey = "rating" | "reviews" | "recent";
+type SortKey = "rating" | "reviews" | "recent_review";
+
+interface HeadhunterWithExtra extends Headhunter {
+  company_sizes?: string[];
+  latest_review_at?: string | null;
+}
 
 function SkeletonCard() {
   return (
@@ -28,11 +34,12 @@ function SkeletonCard() {
 }
 
 export default function HeadhuntersPage() {
-  const [headhunters, setHeadhunters] = useState<Headhunter[]>([]);
+  const [headhunters, setHeadhunters] = useState<HeadhunterWithExtra[]>([]);
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [companySize, setCompanySize] = useState("");
   const [sort, setSort] = useState<SortKey>("rating");
 
   useEffect(() => {
@@ -77,14 +84,21 @@ export default function HeadhuntersPage() {
       list = list.filter((h) => h.specialty_fields.includes(specialty));
     }
 
+    if (companySize) {
+      list = list.filter((h) => h.company_sizes?.includes(companySize));
+    }
+
     list.sort((a, b) => {
       if (sort === "rating") return b.total_rating - a.total_rating;
       if (sort === "reviews") return b.review_count - a.review_count;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // recent_review: 최신 리뷰순
+      const aDate = a.latest_review_at || "";
+      const bDate = b.latest_review_at || "";
+      return bDate.localeCompare(aDate);
     });
 
     return list;
-  }, [headhunters, search, specialty, sort]);
+  }, [headhunters, search, specialty, companySize, sort]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -116,13 +130,23 @@ export default function HeadhuntersPage() {
           ))}
         </select>
         <select
+          value={companySize}
+          onChange={(e) => setCompanySize(e.target.value)}
+          className="bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)]"
+        >
+          <option value="">전체 기업</option>
+          {COMPANY_SIZES.map((cs) => (
+            <option key={cs.value} value={cs.value}>{cs.label}</option>
+          ))}
+        </select>
+        <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
           className="bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)]"
         >
           <option value="rating">평점순</option>
-          <option value="reviews">리뷰 수순</option>
-          <option value="recent">최신순</option>
+          <option value="reviews">리뷰 많은 순</option>
+          <option value="recent_review">최신 리뷰 순</option>
         </select>
       </div>
 

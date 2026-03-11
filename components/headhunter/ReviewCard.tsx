@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Review, Ratings } from "@/lib/types";
-import { RATING_LABELS } from "@/lib/review-constants";
+import { RATING_LABELS, COMPANY_SIZE_LABELS } from "@/lib/review-constants";
 
 interface Props {
   review: Review & { headhunter_name: string; headhunter_firm: string };
@@ -16,6 +16,12 @@ const reviewerTypeLabel: Record<string, string> = {
   headhunter: "헤드헌터",
 };
 
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
 export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
   const avgRating = Object.values(review.ratings).reduce((a, b) => a + b, 0) / 5;
 
@@ -23,7 +29,7 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
     <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
       {/* 헤더 */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             review.review_type === "verified"
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -34,6 +40,9 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
           <span className="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full">
             {reviewerTypeLabel[review.reviewer_type] || review.reviewer_type}
           </span>
+          {review.career_level && (
+            <span className="text-xs text-[var(--muted)]">· {review.career_level}</span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -45,15 +54,18 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
 
       {/* 메타 정보 */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)] mb-3">
-        <span>{review.contact_date}</span>
+        <span>{formatDate(review.contact_date)}</span>
         <span>{review.job_field}</span>
+        {review.company_size && (
+          <span>{COMPANY_SIZE_LABELS[review.company_size] || review.company_size}</span>
+        )}
       </div>
 
       {/* 항목별 평점 (간략) */}
       <div className="flex flex-wrap gap-2 mb-3">
         {(Object.keys(RATING_LABELS) as (keyof Ratings)[]).map((key) => (
           <span key={key} className="text-xs text-[var(--muted)]">
-            {RATING_LABELS[key]} <span className="font-medium text-[var(--foreground)]">{review.ratings[key]}</span>
+            {RATING_LABELS[key]} <span className="font-medium text-[var(--foreground)]">{review.ratings[key].toFixed(1)}</span>
           </span>
         ))}
       </div>
@@ -73,8 +85,16 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
       {/* 리뷰 본문 */}
       <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">{review.content}</p>
 
-      {/* 작성일 */}
-      <p className="text-xs text-[var(--muted)]">{review.created_at}</p>
+      {/* 하단: 작성일 + 신고 */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-[var(--muted)]">{formatDate(review.created_at)}</p>
+        <button className="text-xs text-[var(--muted)] hover:text-red-500 transition flex items-center gap-1">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+          </svg>
+          신고
+        </button>
+      </div>
 
       {/* 헤드헌터 답글 */}
       {review.headhunter_reply && (
@@ -90,7 +110,7 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
         </div>
       )}
 
-      {/* 답글 작성 폼 (클레임된 헤드헌터 본인만) */}
+      {/* 답글 작성 폼 */}
       {showReplyForm && !review.headhunter_reply && (
         <ReplyForm reviewId={review.id} onSubmit={onReply} />
       )}
@@ -105,7 +125,6 @@ function ReplyForm({ reviewId, onSubmit }: { reviewId: string; onSubmit?: (id: s
   const handleSubmit = async () => {
     if (!content.trim() || content.length < 10) return;
     setSubmitting(true);
-    // TODO: API 호출
     await new Promise((r) => setTimeout(r, 500));
     onSubmit?.(reviewId, content);
     setSubmitting(false);
@@ -134,4 +153,3 @@ function ReplyForm({ reviewId, onSubmit }: { reviewId: string; onSubmit?: (id: s
     </div>
   );
 }
-

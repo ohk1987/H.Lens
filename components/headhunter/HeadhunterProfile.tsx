@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
-import { RATING_LABELS } from "@/lib/review-constants";
-import type { Headhunter, Ratings, VerificationLevel } from "@/lib/types";
-import RatingRadarChart from "./RadarChart";
+import { RATING_LABELS, COMPANY_SIZE_LABELS } from "@/lib/review-constants";
+import type { Headhunter, Ratings, VerificationLevel, HeadhunterPosition } from "@/lib/types";
+import RatingTrendChart from "./TrendChart";
 import Link from "next/link";
 
 interface Props {
   id: string;
 }
 
-// 평가 항목 툴팁 설명
 const RATING_TOOLTIPS: Record<keyof Ratings, string> = {
   professionalism: "직무/산업 이해도, 경력 파악 정확성, 포지션 매칭 적합성",
   communication: "응답 속도, 의사소통 명확성, 질문 답변 충실도",
@@ -20,14 +20,13 @@ const RATING_TOOLTIPS: Record<keyof Ratings, string> = {
   transparency: "기업/포지션 정보 제공, 프로세스 진행 공유, 피드백 전달",
 };
 
-// 인증 등급 배지 설정
 const verificationConfig: Record<VerificationLevel, { label: string; color: string }> = {
   none: { label: "미인증", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
   claimed: { label: "본인 인증", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
   verified: { label: "재직 인증", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
 };
 
-function Tooltip({ text }: { text: string }) {
+function TooltipIcon({ text }: { text: string }) {
   return (
     <span className="group relative inline-flex ml-1 cursor-help">
       <svg className="w-3.5 h-3.5 text-[var(--muted)] hover:text-primary-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -41,18 +40,28 @@ function Tooltip({ text }: { text: string }) {
   );
 }
 
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
 export default function HeadhunterProfile({ id }: Props) {
+  const { data: session } = useSession();
   const [hunter, setHunter] = useState<Headhunter | null>(null);
   const [avgRatings, setAvgRatings] = useState<Ratings>({
     professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0,
   });
   const [topPercentage, setTopPercentage] = useState<number | null>(null);
+  const [trendData, setTrendData] = useState<{ date: string; rating: number }[]>([]);
+  const [positions, setPositions] = useState<HeadhunterPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const isHeadhunterOwner = session?.user?.userType === "headhunter" && hunter?.claimed_by === session?.user?.id;
+  const showCTA = !isHeadhunterOwner && (session ? session.user?.userType !== "headhunter" : true);
+
   useEffect(() => {
     async function fetchData() {
-      // 1. Supabase API에서 조회 시도
       try {
         const res = await fetch(`/api/headhunters/${id}`);
         if (res.ok) {
@@ -60,6 +69,13 @@ export default function HeadhunterProfile({ id }: Props) {
           setHunter(data.headhunter);
           setAvgRatings(data.avgRatings);
           setTopPercentage(data.topPercentage ?? null);
+          setPositions(data.positions || []);
+          if (data.reviews) {
+            setTrendData(data.reviews.map((r: { created_at: string; nps_score: number }) => ({
+              date: r.created_at,
+              rating: r.nps_score / 2,
+            })));
+          }
           setLoading(false);
           return;
         }
@@ -67,7 +83,6 @@ export default function HeadhunterProfile({ id }: Props) {
         console.error("API fetch failed, trying mock data:", err);
       }
 
-      // 2. 실패 시 mock 데이터에서 조회
       const mockHunter = MOCK_HEADHUNTERS.find((h) => h.id === id);
       if (mockHunter) {
         setHunter(mockHunter);
@@ -99,45 +114,52 @@ export default function HeadhunterProfile({ id }: Props) {
   }
 
   const verificationLevel = hunter.verification_level || "none";
-  const verificationBadge = verificationConfig[verificationLevel];
-  const generalCount = hunter.review_count - hunter.verified_review_count;
+  const vBadge = verificationConfig[verificationLevel];
 
   return (
     <div className="space-y-6">
       {/* 프로필 헤더 */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start gap-5">
-          {/* 아바타 */}
           <div className="w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl">
             {hunter.name.charAt(0)}
           </div>
 
           <div className="flex-1">
-            {/* 이름 + 배지 */}
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">{hunter.name}</h1>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${verificationBadge.color}`}>
-                {verificationBadge.label}
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vBadge.color}`}>
+                {vBadge.label}
               </span>
             </div>
 
-            {/* 서치펌 */}
             <p className="text-[var(--muted)] mt-1">
               {hunter.firm_name}
               {hunter.search_firm_id && (
                 <Link href={`/firms/${hunter.search_firm_id}`} className="ml-1 text-primary-600 hover:underline text-sm">
-                  (상세보기)
+                  (기업 정보 보기)
                 </Link>
               )}
             </p>
 
-            {/* 전문 분야 */}
             {hunter.specialty_fields.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {hunter.specialty_fields.map((f) => (
                   <span key={f} className="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-2.5 py-1 rounded-full">{f}</span>
                 ))}
               </div>
+            )}
+
+            {showCTA && (
+              <Link
+                href={session ? `/reviews/new?headhunter_id=${hunter.id}` : `/login?callbackUrl=/reviews/new?headhunter_id=${hunter.id}`}
+                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                이 헤드헌터 리뷰 작성하기
+              </Link>
             )}
           </div>
 
@@ -153,37 +175,25 @@ export default function HeadhunterProfile({ id }: Props) {
               <p className="text-xs text-[var(--muted)]">종합 평점</p>
               {topPercentage !== null && (
                 <p className="text-xs font-medium text-primary-600 mt-0.5">
-                  상위 {topPercentage}%
+                  전체 헤드헌터 중 상위 {topPercentage}%
                 </p>
               )}
             </div>
             <div>
               <p className="text-lg font-bold text-[var(--foreground)]">{hunter.review_count}</p>
-              <p className="text-xs text-[var(--muted)]">총 리뷰</p>
-            </div>
-            <div className="flex gap-3 text-xs text-[var(--muted)]">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                인증 {hunter.verified_review_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-gray-400" />
-                일반 {generalCount}
-              </span>
+              <p className="text-xs text-[var(--muted)]">전체 리뷰 수</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 레이더 차트 + 항목별 점수 */}
+      {/* 추이 차트 + 항목별 점수 */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* 레이더 차트 */}
         <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-[var(--foreground)] mb-2">역량 분석</h3>
-          <RatingRadarChart ratings={avgRatings} />
+          <h3 className="text-sm font-semibold text-[var(--foreground)] mb-2">평점 추이</h3>
+          <RatingTrendChart reviews={trendData} />
         </div>
 
-        {/* 항목별 점수 바 + 툴팁 */}
         <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
           <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">항목별 평점</h3>
           <div className="space-y-4">
@@ -192,9 +202,9 @@ export default function HeadhunterProfile({ id }: Props) {
                 <div className="flex justify-between text-sm mb-1.5">
                   <span className="text-[var(--muted)] flex items-center">
                     {RATING_LABELS[key]}
-                    <Tooltip text={RATING_TOOLTIPS[key]} />
+                    <TooltipIcon text={RATING_TOOLTIPS[key]} />
                   </span>
-                  <span className="font-semibold text-[var(--foreground)]">{avgRatings[key]}</span>
+                  <span className="font-semibold text-[var(--foreground)]">{avgRatings[key].toFixed(1)}</span>
                 </div>
                 <div className="h-2.5 bg-[var(--muted-bg)] rounded-full overflow-hidden">
                   <div
@@ -206,6 +216,42 @@ export default function HeadhunterProfile({ id }: Props) {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* 현재 진행 중인 포지션 */}
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6">
+        <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">현재 진행 중인 포지션</h3>
+        {positions.length > 0 ? (
+          <div className="space-y-3">
+            {positions.map((pos) => (
+              <div key={pos.id} className="border border-[var(--card-border)] rounded-xl p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-semibold text-[var(--foreground)]">{pos.title}</h4>
+                    <div className="flex flex-wrap gap-2 mt-1.5 text-xs text-[var(--muted)]">
+                      <span>{pos.industry}</span>
+                      <span>·</span>
+                      <span>{COMPANY_SIZE_LABELS[pos.company_size] || pos.company_size}</span>
+                      <span>·</span>
+                      <span>경력 {pos.career_min}~{pos.career_max}년</span>
+                    </div>
+                    {pos.description && (
+                      <p className="text-sm text-[var(--muted)] mt-2">{pos.description}</p>
+                    )}
+                    <p className="text-xs text-[var(--muted)] mt-2">{formatDate(pos.created_at)}</p>
+                  </div>
+                  {!isHeadhunterOwner && (
+                    <button className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-primary-600 border border-primary-200 dark:border-primary-800 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
+                      관심 있어요
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--muted)] text-center py-6">등록된 포지션이 없습니다</p>
+        )}
       </div>
     </div>
   );

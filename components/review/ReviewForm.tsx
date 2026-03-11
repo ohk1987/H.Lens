@@ -41,6 +41,7 @@ export default function ReviewForm({ searchFirms }: Props) {
         if (!formData.contactDate) return "컨택 일자를 선택해주세요.";
         if (!formData.contactChannel) return "컨택 채널을 선택해주세요.";
         if (!formData.companyName.trim()) return "회사명을 입력해주세요.";
+        if (!formData.companySize) return "기업 구분을 선택해주세요.";
         if (!formData.industry) return "산업군을 선택해주세요.";
         if (!formData.jobFunction) return "직무를 선택해주세요.";
         if (!formData.seniority) return "직급/연차를 선택해주세요.";
@@ -130,6 +131,7 @@ export default function ReviewForm({ searchFirms }: Props) {
           contactDate: formData.contactDate,
           contactChannel: formData.contactChannel,
           companyName: formData.companyName,
+          companySize: formData.companySize,
           industry: formData.industry,
           jobFunction: formData.jobFunction,
           seniority: formData.seniority,

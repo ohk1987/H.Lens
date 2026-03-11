@@ -4,6 +4,7 @@ import KakaoProvider from "next-auth/providers/kakao";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createAdminClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
+import { updateLoginStreak } from "@/lib/achievements/checker";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -64,17 +65,26 @@ export const authOptions: NextAuthOptions = {
 
         if (!existingUser) {
           // 신규 사용자 생성 (user_type은 NULL → 온보딩 페이지에서 선택)
-          const { error } = await supabase
+          const { data: newUser, error } = await supabase
             .from("users")
             .insert({
               email: user.email!,
               name: user.name || "",
-            });
+            })
+            .select("id")
+            .single();
 
           if (error) {
             console.error("User creation error:", error);
             return false;
           }
+          // 첫 로그인 업적 체크
+          if (newUser) {
+            updateLoginStreak(newUser.id).catch(() => {});
+          }
+        } else {
+          // 기존 사용자 로그인 streak 업데이트
+          updateLoginStreak(existingUser.id).catch(() => {});
         }
       }
       return true;

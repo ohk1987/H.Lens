@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { MOCK_REVIEWS, MOCK_HEADHUNTERS } from "@/lib/mock-data";
+import { COMPANY_SIZES } from "@/lib/review-constants";
 import type { Review } from "@/lib/types";
 import ReviewCard from "./ReviewCard";
 
@@ -19,13 +20,13 @@ export default function ReviewList({ headhunterId }: Props) {
   const { data: session } = useSession();
   const [tab, setTab] = useState<TabType>("all");
   const [reviewerFilter, setReviewerFilter] = useState<ReviewerFilter>("all");
+  const [companySizeFilter, setCompanySizeFilter] = useState("");
   const [localReviews, setLocalReviews] = useState<ReviewWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     async function fetchReviews() {
-      // 1. API에서 조회 시도
       try {
         const res = await fetch(`/api/headhunters/${headhunterId}`);
         if (res.ok) {
@@ -44,12 +45,13 @@ export default function ReviewList({ headhunterId }: Props) {
         console.error("Reviews API fetch failed, trying mock data:", err);
       }
 
-      // 2. 실패 시 mock 데이터
       const hunter = MOCK_HEADHUNTERS.find((h) => h.id === headhunterId);
       const mockReviewsForHunter = MOCK_REVIEWS
         .filter((r) => r.headhunter_id === headhunterId)
         .map((r) => ({
           ...r,
+          company_size: null as Review["company_size"],
+          career_level: "",
           headhunter_name: hunter?.name || "",
           headhunter_firm: hunter?.firm_name || "",
         }));
@@ -68,9 +70,10 @@ export default function ReviewList({ headhunterId }: Props) {
     if (tab === "verified") list = list.filter((r) => r.review_type === "verified");
     if (tab === "general") list = list.filter((r) => r.review_type === "general");
     if (reviewerFilter !== "all") list = list.filter((r) => r.reviewer_type === reviewerFilter);
+    if (companySizeFilter) list = list.filter((r) => r.company_size === companySizeFilter);
 
     return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [localReviews, tab, reviewerFilter]);
+  }, [localReviews, tab, reviewerFilter, companySizeFilter]);
 
   const allCount = localReviews.length;
   const verifiedCount = localReviews.filter((r) => r.review_type === "verified").length;
@@ -118,28 +121,59 @@ export default function ReviewList({ headhunterId }: Props) {
         ))}
       </div>
 
-      {/* 리뷰어 유형 필터 */}
-      <div className="flex items-center gap-2 mb-6">
-        <span className="text-xs text-[var(--muted)]">작성자:</span>
-        {(
-          [
-            { key: "all", label: "전체" },
-            { key: "job_seeker", label: "구직자" },
-            { key: "hr_manager", label: "HR 담당자" },
-          ] as { key: ReviewerFilter; label: string }[]
-        ).map((f) => (
+      {/* 필터 행 */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* 리뷰어 유형 필터 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[var(--muted)]">작성자:</span>
+          {(
+            [
+              { key: "all", label: "전체" },
+              { key: "job_seeker", label: "구직자" },
+              { key: "hr_manager", label: "HR 담당자" },
+            ] as { key: ReviewerFilter; label: string }[]
+          ).map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setReviewerFilter(f.key)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                reviewerFilter === f.key
+                  ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400"
+                  : "border-[var(--card-border)] text-[var(--muted)] hover:border-primary-300"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 기업 구분 필터 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[var(--muted)]">기업:</span>
           <button
-            key={f.key}
-            onClick={() => setReviewerFilter(f.key)}
+            onClick={() => setCompanySizeFilter("")}
             className={`text-xs px-3 py-1.5 rounded-full border transition ${
-              reviewerFilter === f.key
+              !companySizeFilter
                 ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400"
                 : "border-[var(--card-border)] text-[var(--muted)] hover:border-primary-300"
             }`}
           >
-            {f.label}
+            전체
           </button>
-        ))}
+          {COMPANY_SIZES.map((cs) => (
+            <button
+              key={cs.value}
+              onClick={() => setCompanySizeFilter(cs.value)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                companySizeFilter === cs.value
+                  ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400"
+                  : "border-[var(--card-border)] text-[var(--muted)] hover:border-primary-300"
+              }`}
+            >
+              {cs.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 리뷰 목록 */}

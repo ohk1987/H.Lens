@@ -38,14 +38,21 @@ const USER_TYPE_OPTIONS: { type: UserType; label: string; desc: string; icon: Re
   },
 ];
 
+type Step = "type" | "nickname";
+
 export default function OnboardingPage() {
   const { data: session, update } = useSession();
   const router = useRouter();
+  const [step, setStep] = useState<Step>("type");
   const [selected, setSelected] = useState<UserType | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [nicknameChecked, setNicknameChecked] = useState(false);
+  const [nicknameAvailable, setNicknameAvailable] = useState(false);
+  const [nicknameError, setNicknameError] = useState("");
+  const [checking, setChecking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // user_type 이미 있으면 홈으로
   useEffect(() => {
     if (session?.user?.userType) {
       router.replace("/");
@@ -54,8 +61,51 @@ export default function OnboardingPage() {
 
   if (session?.user?.userType) return null;
 
-  const handleSelect = async () => {
+  const nicknameValid = /^[가-힣a-zA-Z0-9]{2,10}$/.test(nickname);
+
+  const handleCheckNickname = async () => {
+    if (!nicknameValid) {
+      setNicknameError("2~10자의 한글, 영문, 숫자만 사용 가능합니다.");
+      return;
+    }
+    setChecking(true);
+    setNicknameError("");
+    try {
+      const res = await fetch("/api/auth/check-nickname", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: nickname.trim() }),
+      });
+      const data = await res.json();
+      if (data.available) {
+        setNicknameChecked(true);
+        setNicknameAvailable(true);
+        setNicknameError("");
+      } else {
+        setNicknameChecked(true);
+        setNicknameAvailable(false);
+        setNicknameError(data.error || "사용할 수 없는 닉네임입니다.");
+      }
+    } catch {
+      setNicknameError("확인 중 오류가 발생했습니다.");
+    }
+    setChecking(false);
+  };
+
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
+    setNicknameChecked(false);
+    setNicknameAvailable(false);
+    setNicknameError("");
+  };
+
+  const handleTypeNext = () => {
     if (!selected) return;
+    setStep("nickname");
+  };
+
+  const handleSubmit = async () => {
+    if (!selected || !nicknameChecked || !nicknameAvailable) return;
     setLoading(true);
     setError("");
 
@@ -63,7 +113,7 @@ export default function OnboardingPage() {
       const res = await fetch("/api/auth/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userType: selected }),
+        body: JSON.stringify({ userType: selected, nickname: nickname.trim() }),
       });
 
       const data = await res.json();
@@ -73,13 +123,8 @@ export default function OnboardingPage() {
         return;
       }
 
-      // 세션 업데이트
-      await update({
-        userType: selected,
-        status: data.status,
-      });
+      await update({ userType: selected, status: data.status });
 
-      // HR/헤드헌터는 추가 인증 페이지로
       if (selected === "hr_manager") {
         router.push("/onboarding/hr-verify");
       } else if (selected === "headhunter") {
@@ -96,50 +141,122 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">사용자 유형 선택</h1>
-          <p className="text-[var(--muted)] mt-2">
-            {session?.user?.name || session?.user?.email}님, 어떤 목적으로 H.Lens를 이용하시나요?
-          </p>
-        </div>
-
-        <div className="space-y-3 mb-8">
-          {USER_TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.type}
-              onClick={() => setSelected(opt.type)}
-              className={`w-full flex items-start gap-4 p-5 rounded-xl border text-left transition ${
-                selected === opt.type
-                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-200 dark:ring-primary-800"
-                  : "border-[var(--card-border)] bg-[var(--card-bg)] hover:border-primary-300"
-              }`}
-            >
-              <div className={`mt-0.5 flex-shrink-0 ${selected === opt.type ? "text-primary-600" : "text-[var(--muted)]"}`}>
-                {opt.icon}
-              </div>
-              <div>
-                <p className={`font-semibold ${selected === opt.type ? "text-primary-600" : "text-[var(--foreground)]"}`}>
-                  {opt.label}
-                </p>
-                <p className="text-sm text-[var(--muted)] mt-0.5">{opt.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm text-red-600 dark:text-red-400 mb-4">
-            {error}
+        {/* 단계 표시 */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            step === "type" ? "bg-primary-600 text-white" : "bg-emerald-500 text-white"
+          }`}>
+            {step === "type" ? "1" : "✓"}
           </div>
-        )}
+          <div className="w-8 h-0.5 bg-[var(--card-border)]" />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            step === "nickname" ? "bg-primary-600 text-white" : "bg-[var(--muted-bg)] text-[var(--muted)]"
+          }`}>
+            2
+          </div>
+        </div>
 
-        <button
-          onClick={handleSelect}
-          disabled={!selected || loading}
-          className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition disabled:opacity-50"
-        >
-          {loading ? "처리 중..." : "시작하기"}
-        </button>
+        {step === "type" ? (
+          <>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">사용자 유형 선택</h1>
+              <p className="text-[var(--muted)] mt-2">
+                {session?.user?.name || session?.user?.email}님, 어떤 목적으로 H.Lens를 이용하시나요?
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-8">
+              {USER_TYPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.type}
+                  onClick={() => setSelected(opt.type)}
+                  className={`w-full flex items-start gap-4 p-5 rounded-xl border text-left transition ${
+                    selected === opt.type
+                      ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-200 dark:ring-primary-800"
+                      : "border-[var(--card-border)] bg-[var(--card-bg)] hover:border-primary-300"
+                  }`}
+                >
+                  <div className={`mt-0.5 flex-shrink-0 ${selected === opt.type ? "text-primary-600" : "text-[var(--muted)]"}`}>
+                    {opt.icon}
+                  </div>
+                  <div>
+                    <p className={`font-semibold ${selected === opt.type ? "text-primary-600" : "text-[var(--foreground)]"}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-sm text-[var(--muted)] mt-0.5">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleTypeNext}
+              disabled={!selected}
+              className="w-full bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition disabled:opacity-50"
+            >
+              다음
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">닉네임 설정</h1>
+              <p className="text-[var(--muted)] mt-2">
+                커뮤니티에서 사용할 닉네임을 설정해주세요.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="text-sm font-medium text-[var(--foreground)] mb-2 block">닉네임</label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => handleNicknameChange(e.target.value)}
+                  maxLength={10}
+                  placeholder="2~10자 한글/영문/숫자"
+                  className="flex-1 bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:ring-2 focus:ring-primary-500 outline-none"
+                />
+                <button
+                  onClick={handleCheckNickname}
+                  disabled={checking || !nicknameValid}
+                  className="px-4 py-2.5 text-sm font-medium border border-primary-200 dark:border-primary-800 text-primary-600 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition disabled:opacity-50 flex-shrink-0"
+                >
+                  {checking ? "확인 중..." : "중복 확인"}
+                </button>
+              </div>
+              {nicknameError && (
+                <p className="text-xs text-red-500 mt-1.5">{nicknameError}</p>
+              )}
+              {nicknameChecked && nicknameAvailable && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5">사용 가능한 닉네임입니다.</p>
+              )}
+              <p className="text-xs text-[var(--muted)] mt-1.5">한글, 영문, 숫자만 사용 가능 (2~10자)</p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm text-red-600 dark:text-red-400 mb-4">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("type")}
+                className="flex-1 py-3 rounded-xl font-medium border border-[var(--card-border)] text-[var(--muted)] hover:text-[var(--foreground)] transition"
+              >
+                이전
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!nicknameChecked || !nicknameAvailable || loading}
+                className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-medium hover:bg-primary-700 transition disabled:opacity-50"
+              >
+                {loading ? "처리 중..." : "시작하기"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

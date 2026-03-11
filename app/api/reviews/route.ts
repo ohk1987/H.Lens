@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
+import { checkAchievements } from "@/lib/achievements/checker";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
     contact_date: body.contactDate,
     contact_channel: body.contactChannel,
     company_name: body.companyName || null,
+    company_size: body.companySize || null,
     industry: body.industry,
     job_function: body.jobFunction,
     career_level: body.seniority,
@@ -111,6 +113,12 @@ export async function POST(request: NextRequest) {
   if (reviewError) {
     console.error("Review creation error:", reviewError);
     return NextResponse.json({ error: "리뷰 저장에 실패했습니다: " + reviewError.message }, { status: 500 });
+  }
+
+  // 업적 체크 (비동기, 실패해도 리뷰 응답에 영향 없음)
+  checkAchievements(session.user.id, "review_write").catch(() => {});
+  if (body.evidenceFileUrl) {
+    checkAchievements(session.user.id, "review_verified").catch(() => {});
   }
 
   return NextResponse.json({ success: true, reviewId: review.id });

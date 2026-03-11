@@ -18,6 +18,7 @@ export async function GET(
       name,
       email,
       phone,
+      bio,
       search_firm_id,
       is_claimed,
       claimed_by,
@@ -133,6 +134,7 @@ export async function GET(
     name: hunter.name,
     email: hunter.email,
     phone: hunter.phone,
+    bio: hunter.bio || null,
     search_firm_id: hunter.search_firm_id,
     firm_name: firm?.name || "소속 없음",
     specialty_fields: firm?.specialty_fields || [],
@@ -158,6 +160,8 @@ export async function GET(
     contact_date: r.contact_date,
     contact_channel: r.contact_channel,
     job_field: `${r.industry || ""} / ${r.job_function || ""}`,
+    company_size: r.company_size || null,
+    career_level: r.career_level || "",
     ratings: {
       professionalism: r.rating_professionalism,
       communication: r.rating_communication,
@@ -175,10 +179,19 @@ export async function GET(
     headhunter_firm: firm?.name || "",
   }));
 
+  // 7. 포지션 목록 조회
+  const { data: positions } = await supabase
+    .from("headhunter_positions")
+    .select("*")
+    .eq("headhunter_id", id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
   return NextResponse.json({
     headhunter: headhunterData,
     reviews: mappedReviews,
     avgRatings,
     topPercentage,
+    positions: positions || [],
   });
 }

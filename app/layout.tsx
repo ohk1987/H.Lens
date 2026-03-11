@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AuthProvider from "@/components/providers/AuthProvider";
+import AchievementToast from "@/components/ui/AchievementToast";
 
 export const metadata: Metadata = {
   title: "H.Lens - 헤드헌터 리뷰 플랫폼",
@@ -21,6 +22,7 @@ export default function RootLayout({
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <AchievementToast />
         </AuthProvider>
       </body>
     </html>

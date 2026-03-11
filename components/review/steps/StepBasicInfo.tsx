@@ -4,6 +4,7 @@ import type { ReviewFormData } from "@/lib/types/review-form";
 import {
   CONTACT_CHANNELS,
   JOBSITE_SUB_OPTIONS,
+  COMPANY_SIZES,
   INDUSTRIES,
   JOB_FUNCTIONS,
   SENIORITY_LEVELS,
@@ -106,6 +107,29 @@ export default function StepBasicInfo({ data, onChange }: Props) {
           </svg>
           회사명은 데이터 수집 목적으로만 사용되며 절대 공개되지 않습니다
         </p>
+      </div>
+
+      {/* 기업 구분 */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
+          기업 구분 <span className="text-red-500">*</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {COMPANY_SIZES.map((cs) => (
+            <button
+              key={cs.value}
+              type="button"
+              onClick={() => onChange({ companySize: cs.value })}
+              className={`px-3 py-1.5 rounded-full border text-sm transition ${
+                data.companySize === cs.value
+                  ? "border-primary-600 bg-primary-50 text-primary-600 dark:bg-primary-900/20"
+                  : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--muted)] hover:border-primary-300"
+              }`}
+            >
+              {cs.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 산업군 */}

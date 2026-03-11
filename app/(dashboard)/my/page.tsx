@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
 import { USER_TYPE_LABELS, USER_STATUS_LABELS } from "@/lib/constants";
 import Link from "next/link";
+import AchievementsSection from "@/components/my/AchievementsSection";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
@@ -46,6 +47,14 @@ export default async function MyPage() {
     .eq("reviewer_id", userId)
     .order("created_at", { ascending: false });
 
+  // 대표 배지 (is_displayed = true)
+  const { data: displayedBadges } = await supabase
+    .from("user_achievements")
+    .select("achievement_id, achievements(name, grade, icon)")
+    .eq("user_id", userId)
+    .eq("is_displayed", true)
+    .limit(3);
+
   const statusColor: Record<string, string> = {
     active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -54,6 +63,13 @@ export default async function MyPage() {
   };
 
   const providerLabel = PROVIDER_LABELS[session.user.provider] || session.user.provider;
+
+  const gradeColors: Record<string, string> = {
+    bronze: "from-amber-600 to-amber-700",
+    silver: "from-gray-400 to-gray-500",
+    gold: "from-yellow-400 to-yellow-500",
+    platinum: "from-purple-500 to-purple-600",
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -70,10 +86,13 @@ export default async function MyPage() {
               {(profile?.name || session.user.name)?.charAt(0) || "U"}
             </div>
           )}
-          <div>
+          <div className="flex-1">
             <h2 className="text-xl font-semibold text-[var(--foreground)]">
               {profile?.name || session.user.name}
             </h2>
+            {profile?.nickname && (
+              <p className="text-sm text-[var(--muted)]">@{profile.nickname}</p>
+            )}
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-[var(--muted)]">
                 {USER_TYPE_LABELS[profile?.user_type || session.user.userType] || "미설정"}
@@ -84,6 +103,27 @@ export default async function MyPage() {
                 {USER_STATUS_LABELS[profile?.status || session.user.status] || "활성"}
               </span>
             </div>
+
+            {/* 대표 배지 */}
+            {displayedBadges && displayedBadges.length > 0 && (
+              <div className="flex items-center gap-2 mt-3">
+                {displayedBadges.map((badge) => {
+                  const ach = badge.achievements as unknown as { name: string; grade: string; icon: string } | null;
+                  if (!ach) return null;
+                  return (
+                    <span
+                      key={badge.achievement_id}
+                      className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-white bg-gradient-to-r ${
+                        gradeColors[ach.grade] || gradeColors.bronze
+                      }`}
+                      title={ach.name}
+                    >
+                      🏆 {ach.name}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -129,6 +169,9 @@ export default async function MyPage() {
           </p>
         </section>
       )}
+
+      {/* 업적 섹션 (클라이언트 컴포넌트) */}
+      <AchievementsSection />
 
       {/* 내가 작성한 리뷰 */}
       <section className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6">

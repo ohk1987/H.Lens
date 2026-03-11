@@ -26,6 +26,7 @@ export interface ReviewFormData {
   contactChannelDetail: string;
   contactChannelCustom: string;
   companyName: string;
+  companySize: string;
   industry: string;
   jobFunction: string;
   seniority: string;
@@ -62,6 +63,7 @@ export const INITIAL_FORM_DATA: ReviewFormData = {
   contactChannelDetail: "",
   contactChannelCustom: "",
   companyName: "",
+  companySize: "",
   industry: "",
   jobFunction: "",
   seniority: "",

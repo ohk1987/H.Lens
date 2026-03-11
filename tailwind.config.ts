@@ -43,6 +43,7 @@ const config: Config = {
         "slide-in-left": "slideInLeft 0.6s ease-out forwards",
         "slide-in-right": "slideInRight 0.6s ease-out forwards",
         "count-up": "countUp 2s ease-out forwards",
+        "slide-up": "slideUp 0.4s ease-out forwards",
       },
       keyframes: {
         fadeInUp: {
@@ -60,6 +61,10 @@ const config: Config = {
         slideInRight: {
           "0%": { opacity: "0", transform: "translateX(30px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },
     },

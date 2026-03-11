@@ -36,20 +36,22 @@ export async function GET() {
   // 전체 리뷰 조회 (헤드헌터별 통계 계산용)
   const { data: allReviews } = await supabase
     .from("reviews")
-    .select("headhunter_id, rating_overall, review_type");
+    .select("headhunter_id, rating_overall, review_type, company_size, created_at");
 
-  const reviewsByHunter = new Map<string, { count: number; verifiedCount: number; totalRating: number }>();
+  const reviewsByHunter = new Map<string, { count: number; verifiedCount: number; totalRating: number; companySizes: Set<string>; latestReviewAt: string }>();
   for (const r of allReviews || []) {
-    const existing = reviewsByHunter.get(r.headhunter_id) || { count: 0, verifiedCount: 0, totalRating: 0 };
+    const existing = reviewsByHunter.get(r.headhunter_id) || { count: 0, verifiedCount: 0, totalRating: 0, companySizes: new Set<string>(), latestReviewAt: "" };
     existing.count += 1;
     existing.totalRating += r.rating_overall;
     if (r.review_type === "verified") existing.verifiedCount += 1;
+    if (r.company_size) existing.companySizes.add(r.company_size);
+    if (r.created_at > existing.latestReviewAt) existing.latestReviewAt = r.created_at;
     reviewsByHunter.set(r.headhunter_id, existing);
   }
 
   const result = (hunters || []).map((h) => {
     const firm = h.search_firms as unknown as { id: string; name: string; specialty_fields: string[] } | null;
-    const stats = reviewsByHunter.get(h.id) || { count: 0, verifiedCount: 0, totalRating: 0 };
+    const stats = reviewsByHunter.get(h.id) || { count: 0, verifiedCount: 0, totalRating: 0, companySizes: new Set<string>(), latestReviewAt: "" };
     const avgRating = stats.count > 0 ? parseFloat((stats.totalRating / stats.count).toFixed(1)) : 0;
 
     let trustBadgeLevel: "none" | "partial" | "full" = "none";
@@ -74,6 +76,8 @@ export async function GET() {
       is_claimed: h.is_claimed,
       verification_level: h.verification_level || "none",
       created_at: h.created_at,
+      company_sizes: Array.from(stats.companySizes),
+      latest_review_at: stats.latestReviewAt || null,
     };
   });
 

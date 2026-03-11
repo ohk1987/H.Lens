@@ -52,6 +52,22 @@ export const SENIORITY_LEVELS = [
   { value: "executive", label: "임원급" },
 ];
 
+export const COMPANY_SIZES = [
+  { value: "startup", label: "스타트업" },
+  { value: "small", label: "중소기업" },
+  { value: "medium", label: "중견기업" },
+  { value: "large", label: "대기업" },
+  { value: "foreign", label: "외국계" },
+];
+
+export const COMPANY_SIZE_LABELS: Record<string, string> = {
+  startup: "스타트업",
+  small: "중소기업",
+  medium: "중견기업",
+  large: "대기업",
+  foreign: "외국계",
+};
+
 export const PROGRESS_RESULTS = [
   { value: "in_progress", label: "진행 중" },
   { value: "hired", label: "최종 합격" },

@@ -10,7 +10,10 @@
       "Bash(curl:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)"
     ]
   }
 }

@@ -13,6 +13,20 @@ export default function Header() {
     signOut({ callbackUrl: "/" });
   };
 
+  const isActiveHeadhunter =
+    session?.user?.userType === "headhunter" &&
+    session?.user?.status === "active";
+
+  const navLinks = [
+    { href: "/headhunters", label: "헤드헌터" },
+    { href: "/articles", label: "아티클" },
+    { href: "/community", label: "커뮤니티" },
+    // 헤드헌터는 "리뷰 작성" 대신 "내 대시보드"
+    ...(isActiveHeadhunter
+      ? [{ href: "/dashboard/headhunter", label: "내 대시보드" }]
+      : [{ href: "/reviews/new", label: "리뷰 작성" }]),
+  ];
+
   return (
     <header className="border-b border-[var(--card-border)] bg-[var(--card-bg)] sticky top-0 z-50 backdrop-blur-sm bg-opacity-90">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -22,15 +36,15 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/headhunters" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
-            헤드헌터
-          </Link>
-          <Link href="/articles" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
-            아티클
-          </Link>
-          <Link href="/reviews/new" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
-            리뷰 작성
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm text-[var(--muted)] hover:text-primary-600 transition"
+            >
+              {link.label}
+            </Link>
+          ))}
           {session?.user ? (
             <>
               <Link href="/my" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
@@ -89,18 +103,23 @@ export default function Header() {
       {/* Mobile Nav */}
       {mobileOpen && (
         <nav className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-4 space-y-3">
-          <Link href="/headhunters" className="block text-sm text-[var(--muted)] hover:text-primary-600">
-            헤드헌터
-          </Link>
-          <Link href="/articles" className="block text-sm text-[var(--muted)] hover:text-primary-600">
-            아티클
-          </Link>
-          <Link href="/reviews/new" className="block text-sm text-[var(--muted)] hover:text-primary-600">
-            리뷰 작성
-          </Link>
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block text-sm text-[var(--muted)] hover:text-primary-600"
+              onClick={() => setMobileOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
           {session?.user ? (
             <>
-              <Link href="/my" className="block text-sm text-[var(--muted)] hover:text-primary-600">
+              <Link
+                href="/my"
+                className="block text-sm text-[var(--muted)] hover:text-primary-600"
+                onClick={() => setMobileOpen(false)}
+              >
                 마이페이지
               </Link>
               <button onClick={handleLogout} className="block text-sm text-[var(--muted)]">
@@ -108,7 +127,11 @@ export default function Header() {
               </button>
             </>
           ) : (
-            <Link href="/login" className="block text-sm text-primary-600 font-medium">
+            <Link
+              href="/login"
+              className="block text-sm text-primary-600 font-medium"
+              onClick={() => setMobileOpen(false)}
+            >
               로그인
             </Link>
           )}
