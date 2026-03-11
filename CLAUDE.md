@@ -138,7 +138,7 @@ users                  -- 사용자 (email, name, nickname, user_type, status, p
                           company_email, last_login_at, login_streak, total_login_days)
 
 headhunters            -- 헤드헌터 프로필 (name, email, phone, search_firm_id, claimed_by,
-                          is_claimed, bio, profile_image, specialty_fields[])
+                          is_claimed, bio, profile_image, verification_level)
 
 search_firms           -- 서치펌 (name, website, description, specialty_fields[], status)
 

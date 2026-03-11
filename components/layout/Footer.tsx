@@ -32,6 +32,7 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">정보</h4>
             <ul className="space-y-2 text-sm text-[var(--muted)]">
+              <li><Link href="/about" className="hover:text-primary-600 transition">회사 소개</Link></li>
               <li><Link href="/terms" className="hover:text-primary-600 transition">이용약관</Link></li>
               <li><Link href="/privacy" className="hover:text-primary-600 transition">개인정보처리방침</Link></li>
               <li><Link href="/review-guidelines" className="hover:text-primary-600 transition">리뷰 가이드라인</Link></li>
