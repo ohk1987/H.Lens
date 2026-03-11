@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function Header() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const findRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     signOut({ callbackUrl: "/" });
@@ -17,15 +19,18 @@ export default function Header() {
     session?.user?.userType === "headhunter" &&
     session?.user?.status === "active";
 
-  const navLinks = [
-    { href: "/headhunters", label: "헤드헌터" },
-    { href: "/articles", label: "아티클" },
-    { href: "/community", label: "커뮤니티" },
-    // 헤드헌터는 "리뷰 작성" 대신 "내 대시보드"
-    ...(isActiveHeadhunter
-      ? [{ href: "/dashboard/headhunter", label: "내 대시보드" }]
-      : [{ href: "/reviews/new", label: "리뷰 작성" }]),
-  ];
+  // 드롭다운 외부 클릭 시 닫힘
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (findRef.current && !findRef.current.contains(e.target as Node)) {
+        setFindOpen(false);
+      }
+    }
+    if (findOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [findOpen]);
 
   return (
     <header className="border-b border-[var(--card-border)] bg-[var(--card-bg)] sticky top-0 z-50 backdrop-blur-sm bg-opacity-90">
@@ -36,15 +41,74 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
+          {/* 찾기 드롭다운 */}
+          <div className="relative" ref={findRef}>
+            <button
+              onClick={() => setFindOpen(!findOpen)}
+              className="text-sm text-[var(--muted)] hover:text-primary-600 transition flex items-center gap-1"
+            >
+              찾기
+              <svg
+                className={`w-3.5 h-3.5 transition-transform ${findOpen ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {findOpen && (
+              <div className="absolute top-full left-0 mt-2 w-44 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-lg py-1 z-50">
+                <Link
+                  href="/headhunters"
+                  className="block px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--muted-bg)] transition"
+                  onClick={() => setFindOpen(false)}
+                >
+                  헤드헌터 찾기
+                </Link>
+                <Link
+                  href="/firms"
+                  className="block px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--muted-bg)] transition"
+                  onClick={() => setFindOpen(false)}
+                >
+                  서치펌 찾기
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/articles"
+            className="text-sm text-[var(--muted)] hover:text-primary-600 transition"
+          >
+            아티클
+          </Link>
+
+          {/* 헤드헌터: 내 대시보드, 기타: 리뷰 작성 */}
+          {isActiveHeadhunter ? (
             <Link
-              key={link.href}
-              href={link.href}
+              href="/dashboard/headhunter"
               className="text-sm text-[var(--muted)] hover:text-primary-600 transition"
             >
-              {link.label}
+              내 대시보드
             </Link>
-          ))}
+          ) : (
+            <Link
+              href="/reviews/new"
+              className="text-sm text-[var(--muted)] hover:text-primary-600 transition"
+            >
+              리뷰 작성
+            </Link>
+          )}
+
+          <Link
+            href="/community"
+            className="text-sm text-[var(--muted)] hover:text-primary-600 transition"
+          >
+            커뮤니티
+          </Link>
+
           {session?.user ? (
             <>
               <Link href="/my" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
@@ -103,16 +167,77 @@ export default function Header() {
       {/* Mobile Nav */}
       {mobileOpen && (
         <nav className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-4 space-y-3">
-          {navLinks.map((link) => (
+          {/* 찾기 드롭다운 (모바일) */}
+          <div>
+            <button
+              onClick={() => setFindOpen(!findOpen)}
+              className="flex items-center gap-1 text-sm text-[var(--muted)] hover:text-primary-600"
+            >
+              찾기
+              <svg
+                className={`w-3.5 h-3.5 transition-transform ${findOpen ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {findOpen && (
+              <div className="ml-4 mt-2 space-y-2">
+                <Link
+                  href="/headhunters"
+                  className="block text-sm text-[var(--muted)] hover:text-primary-600"
+                  onClick={() => { setFindOpen(false); setMobileOpen(false); }}
+                >
+                  헤드헌터 찾기
+                </Link>
+                <Link
+                  href="/firms"
+                  className="block text-sm text-[var(--muted)] hover:text-primary-600"
+                  onClick={() => { setFindOpen(false); setMobileOpen(false); }}
+                >
+                  서치펌 찾기
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/articles"
+            className="block text-sm text-[var(--muted)] hover:text-primary-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            아티클
+          </Link>
+
+          {isActiveHeadhunter ? (
             <Link
-              key={link.href}
-              href={link.href}
+              href="/dashboard/headhunter"
               className="block text-sm text-[var(--muted)] hover:text-primary-600"
               onClick={() => setMobileOpen(false)}
             >
-              {link.label}
+              내 대시보드
             </Link>
-          ))}
+          ) : (
+            <Link
+              href="/reviews/new"
+              className="block text-sm text-[var(--muted)] hover:text-primary-600"
+              onClick={() => setMobileOpen(false)}
+            >
+              리뷰 작성
+            </Link>
+          )}
+
+          <Link
+            href="/community"
+            className="block text-sm text-[var(--muted)] hover:text-primary-600"
+            onClick={() => setMobileOpen(false)}
+          >
+            커뮤니티
+          </Link>
+
           {session?.user ? (
             <>
               <Link

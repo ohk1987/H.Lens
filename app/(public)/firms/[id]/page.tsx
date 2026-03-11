@@ -1,18 +1,131 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MOCK_FIRMS, MOCK_HEADHUNTERS, MOCK_REVIEWS, getFirmStats } from "@/lib/mock-data";
 import { RATING_LABELS } from "@/lib/review-constants";
-import type { Ratings } from "@/lib/types";
+import type { Headhunter, Ratings, SearchFirm } from "@/lib/types";
 import HeadhunterCard from "@/components/headhunter/HeadhunterCard";
+
+interface FirmData {
+  firm: SearchFirm | null;
+  hunters: Headhunter[];
+  avgRatings: Ratings;
+  reviewCount: number;
+  stats: { count: number; avgRating: number; totalReviews: number };
+  specDistribution: [string, number][];
+}
+
+function SkeletonPage() {
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8 animate-pulse">
+      <div className="h-4 bg-[var(--muted-bg)] rounded w-40 mb-6" />
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 md:p-8 mb-8">
+        <div className="flex gap-5">
+          <div className="w-16 h-16 bg-[var(--muted-bg)] rounded-2xl" />
+          <div className="flex-1 space-y-3">
+            <div className="h-6 bg-[var(--muted-bg)] rounded w-48" />
+            <div className="h-4 bg-[var(--muted-bg)] rounded w-64" />
+            <div className="flex gap-2">
+              <div className="h-6 bg-[var(--muted-bg)] rounded w-16" />
+              <div className="h-6 bg-[var(--muted-bg)] rounded w-16" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function FirmDetailPage() {
   const params = useParams();
   const firmId = params.id as string;
-  const firm = MOCK_FIRMS.find((f) => f.id === firmId);
+  const [data, setData] = useState<FirmData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!firm) {
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // 서치펌 목록 API에서 해당 펌 찾기
+        const firmsRes = await fetch("/api/firms");
+        if (firmsRes.ok) {
+          const firmsData = await firmsRes.json();
+          const apiFirm = (firmsData.firms || []).find((f: SearchFirm & { stats: { count: number; avgRating: number; totalReviews: number } }) => f.id === firmId);
+          if (apiFirm) {
+            // 헤드헌터 목록에서 이 펌 소속 필터
+            const huntersRes = await fetch("/api/headhunters");
+            let apiHunters: Headhunter[] = [];
+            if (huntersRes.ok) {
+              const huntersData = await huntersRes.json();
+              apiHunters = (huntersData.headhunters || []).filter((h: Headhunter) => h.search_firm_id === firmId);
+            }
+
+            // 전문 분야 분포
+            const specDist: Record<string, number> = {};
+            for (const h of apiHunters) {
+              for (const f of h.specialty_fields) {
+                specDist[f] = (specDist[f] || 0) + 1;
+              }
+            }
+
+            setData({
+              firm: apiFirm,
+              hunters: apiHunters,
+              avgRatings: { professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0 },
+              reviewCount: apiFirm.stats?.totalReviews || 0,
+              stats: apiFirm.stats || { count: 0, avgRating: 0, totalReviews: 0 },
+              specDistribution: Object.entries(specDist).sort((a, b) => b[1] - a[1]),
+            });
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch firm data:", err);
+      }
+
+      // mock 데이터 fallback
+      const mockFirm = MOCK_FIRMS.find((f) => f.id === firmId) || null;
+      if (mockFirm) {
+        const hunters = MOCK_HEADHUNTERS.filter((h) => h.search_firm_id === firmId);
+        const hunterIds = new Set(hunters.map((h) => h.id));
+        const firmReviews = MOCK_REVIEWS.filter((r) => hunterIds.has(r.headhunter_id));
+
+        const avgRatings: Ratings = { professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0 };
+        if (firmReviews.length > 0) {
+          for (const r of firmReviews) {
+            (Object.keys(avgRatings) as (keyof Ratings)[]).forEach((k) => { avgRatings[k] += r.ratings[k]; });
+          }
+          (Object.keys(avgRatings) as (keyof Ratings)[]).forEach((k) => {
+            avgRatings[k] = parseFloat((avgRatings[k] / firmReviews.length).toFixed(1));
+          });
+        }
+
+        const specDist: Record<string, number> = {};
+        for (const h of hunters) {
+          for (const f of h.specialty_fields) {
+            specDist[f] = (specDist[f] || 0) + 1;
+          }
+        }
+
+        setData({
+          firm: mockFirm,
+          hunters,
+          avgRatings,
+          reviewCount: firmReviews.length,
+          stats: getFirmStats(firmId),
+          specDistribution: Object.entries(specDist).sort((a, b) => b[1] - a[1]),
+        });
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, [firmId]);
+
+  if (loading) return <SkeletonPage />;
+
+  if (!data?.firm) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2">서치펌을 찾을 수 없습니다</h1>
@@ -22,33 +135,8 @@ export default function FirmDetailPage() {
     );
   }
 
-  const hunters = MOCK_HEADHUNTERS.filter((h) => h.search_firm_id === firmId);
-  const stats = getFirmStats(firmId);
-
-  // 전체 리뷰에서 이 펌 소속 헤드헌터 리뷰만 집계
-  const hunterIds = new Set(hunters.map((h) => h.id));
-  const firmReviews = MOCK_REVIEWS.filter((r) => hunterIds.has(r.headhunter_id));
-
-  // 종합 평균 ratings
-  const avgRatings: Ratings = { professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0 };
-  if (firmReviews.length > 0) {
-    for (const r of firmReviews) {
-      (Object.keys(avgRatings) as (keyof Ratings)[]).forEach((k) => { avgRatings[k] += r.ratings[k]; });
-    }
-    (Object.keys(avgRatings) as (keyof Ratings)[]).forEach((k) => {
-      avgRatings[k] = parseFloat((avgRatings[k] / firmReviews.length).toFixed(1));
-    });
-  }
-
-  // 전문 분야 분포
-  const specDistribution: Record<string, number> = {};
-  for (const h of hunters) {
-    for (const f of h.specialty_fields) {
-      specDistribution[f] = (specDistribution[f] || 0) + 1;
-    }
-  }
-  const specEntries = Object.entries(specDistribution).sort((a, b) => b[1] - a[1]);
-  const maxSpec = specEntries.length > 0 ? specEntries[0][1] : 1;
+  const { firm, hunters, avgRatings, reviewCount, stats, specDistribution } = data;
+  const maxSpec = specDistribution.length > 0 ? specDistribution[0][1] : 1;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -109,7 +197,7 @@ export default function FirmDetailPage() {
           {/* 종합 평점 항목별 */}
           <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
             <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">항목별 종합 점수</h3>
-            {firmReviews.length > 0 ? (
+            {reviewCount > 0 ? (
               <div className="space-y-3">
                 {(Object.keys(RATING_LABELS) as (keyof Ratings)[]).map((key) => (
                   <div key={key}>
@@ -131,9 +219,9 @@ export default function FirmDetailPage() {
           {/* 전문 분야 분포 */}
           <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
             <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">전문 분야 분포</h3>
-            {specEntries.length > 0 ? (
+            {specDistribution.length > 0 ? (
               <div className="space-y-2.5">
-                {specEntries.map(([field, count]) => (
+                {specDistribution.map(([field, count]) => (
                   <div key={field}>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-[var(--muted)]">{field}</span>
