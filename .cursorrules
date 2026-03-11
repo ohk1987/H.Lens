@@ -1,0 +1,72 @@
+# H.Lens 프로젝트 Cursor 규칙
+
+## 프로젝트 개요
+- 한국어 헤드헌터 리뷰 플랫폼 (Next.js 14 App Router + Supabase + NextAuth v4)
+- 모든 UI 텍스트와 에러 메시지는 한국어로 작성
+- 배포 URL: https://hlens.vercel.app
+
+## 코딩 컨벤션
+
+### 일반 규칙
+- TypeScript strict mode 사용
+- 함수형 컴포넌트 + React Hooks
+- `export default function ComponentName()` 패턴
+- 불필요한 주석, 독스트링 추가 금지
+- downlevelIteration 미사용: Set/Map 순회 시 `Array.from()` 또는 for-of 사용
+
+### Supabase 접근 규칙 (중요)
+- 서버사이드: 반드시 `createAdminClient()` 사용 (`@/lib/supabase/server`)
+- 클라이언트사이드: API 라우트를 통해서만 DB 접근 (직접 Supabase 쿼리 금지)
+- Supabase 반환값은 표준 Promise가 아님: `.then()/.catch()` 대신 `const { data, error } = await ...` 패턴 사용
+
+### 인증 패턴
+```typescript
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
+const session = await getServerSession(authOptions);
+// session.user.id, session.user.userType, session.user.status, session.user.provider
+```
+
+### API 라우트 패턴
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+// 에러: NextResponse.json({ error: "한국어 메시지" }, { status: 4xx })
+// 성공: NextResponse.json({ data })
+```
+
+### 스타일링 규칙
+- Tailwind CSS + CSS 변수 (`var(--foreground)`, `var(--card-bg)`, `var(--card-border)`, `var(--muted)`, `var(--muted-bg)`)
+- 카드 패턴: `bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6`
+- 커스텀 색상: `primary-*` (파란색), `navy-*` (남색)
+- 다크모드: `dark:` 프리픽스 또는 CSS 변수 자동 전환
+
+### 컴포넌트 규칙
+- 서버 컴포넌트 기본, 상호작용 필요 시에만 `"use client"`
+- 페이지 컴포넌트: `app/` 디렉토리 내 `page.tsx`
+- 재사용 컴포넌트: `components/` 디렉토리
+- 타입: `lib/types/index.ts`
+- 상수: `lib/constants.ts`, `lib/review-constants.ts`, `lib/community-constants.ts`
+
+## DB 관련 주의사항
+
+### ENUM 값 (정확히 이 값만 사용)
+- user_type: `'job_seeker'`, `'hr_manager'`, `'headhunter'`
+- user_status: `'pending'`, `'active'`, `'suspended'`
+- review_kind: `'general'`, `'verified'`
+- contact_channel: `'linkedin'`, `'email'`, `'phone'`, `'job_site'`, `'referral'`, `'other'`
+- progress_result: `'in_progress'`, `'hired'`, `'rejected'`, `'dropped'`
+- company_size: `'startup'`, `'small'`, `'medium'`, `'large'`, `'foreign'`
+
+### mock 데이터 Fallback 패턴
+```typescript
+// lib/types/index.ts 인터페이스 변경 시 lib/mock-data.ts도 반드시 업데이트
+```
+
+## 파일 구조 규칙
+- 라우트 그룹: `(auth)`, `(public)`, `(dashboard)` 용도에 맞게 배치
+- API 라우트: `app/api/` 하위에 RESTful 구조
+- 마이그레이션: `supabase/migrations/` 숫자 순서 (현재 001~013)
+
+## 빌드 검증
+- 기능 구현 후 반드시 `npx next build` 로 TypeScript 에러 확인
+- Recharts Tooltip formatter: 명시적 타입 대신 `(value) => Number(value)` 패턴 사용
