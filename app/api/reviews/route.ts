@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     rating_reliability: body.ratings.reliability,
     rating_support: body.ratings.support,
     rating_transparency: body.ratings.transparency,
-    rating_overall: Math.round(body.overallRating),
+    rating_overall: body.overallRating,
     keywords_positive: body.keywordsPositive || [],
     keywords_negative: body.keywordsNegative || [],
     content: body.content,

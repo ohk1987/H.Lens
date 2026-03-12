@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { STEPS } from "@/lib/review-constants";
 import { INITIAL_FORM_DATA, type ReviewFormData, type ReviewerRole } from "@/lib/types/review-form";
 import type { SearchFirm } from "@/lib/types";
@@ -17,10 +18,35 @@ interface Props {
 
 export default function ReviewForm({ searchFirms }: Props) {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<ReviewFormData>(INITIAL_FORM_DATA);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // headhunter_id가 URL 파라미터로 전달된 경우 자동 선택
+  useEffect(() => {
+    const headhunterId = searchParams.get("headhunter_id");
+    if (headhunterId && !formData.headhunterId) {
+      fetch(`/api/headhunters/${headhunterId}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.headhunter) {
+            setFormData((prev) => ({
+              ...prev,
+              headhunterId: data.headhunter.id,
+              headhunterName: data.headhunter.name,
+              matchedHeadhunter: {
+                id: data.headhunter.id,
+                name: data.headhunter.name,
+                firm_name: data.headhunter.firm_name,
+              },
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [searchParams, formData.headhunterId]);
 
   const reviewerRole: ReviewerRole =
     session?.user?.userType === "hr_manager" ? "hr_manager" : "job_seeker";
@@ -33,9 +59,16 @@ export default function ReviewForm({ searchFirms }: Props) {
   const validateStep = (s: number): string | null => {
     switch (s) {
       case 0:
-        if (!formData.headhunterName.trim()) return "헤드헌터 이름을 입력해주세요.";
-        if (!formData.headhunterEmail.trim()) return "이메일을 입력해주세요.";
-        if (!formData.headhunterPhone.trim()) return "핸드폰번호를 입력해주세요.";
+        if (formData.headhunterId) {
+          // 검색으로 선택한 경우: 이름만 확인
+          if (!formData.headhunterName.trim()) return "헤드헌터 이름을 입력해주세요.";
+        } else {
+          // 수동 입력 모드: 이름/이메일/핸드폰/서치펌 필수
+          if (!formData.headhunterName.trim()) return "헤드헌터 이름을 입력해주세요.";
+          if (!formData.headhunterEmail.trim()) return "이메일을 입력해주세요.";
+          if (!formData.headhunterPhone.trim()) return "핸드폰번호를 입력해주세요.";
+          if (!formData.searchFirmId) return "서치펌/회사명을 선택해주세요.";
+        }
         return null;
       case 1:
         if (!formData.contactDate) return "컨택 일자를 선택해주세요.";

@@ -30,7 +30,8 @@ export default function StepBasicInfo({ data, onChange }: Props) {
           onChange={(e) => onChange({ contactDate: e.target.value })}
           max={new Date().toISOString().split("T")[0]}
           placeholder="제안을 받으신 날짜를 선택해주세요"
-          className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] focus:ring-2 focus:ring-primary-500 outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+          onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+          className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-xl px-4 py-2.5 text-[var(--foreground)] focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         />
       </div>
 

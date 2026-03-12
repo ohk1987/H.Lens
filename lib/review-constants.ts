@@ -73,6 +73,7 @@ export const PROGRESS_RESULTS = [
   { value: "hired", label: "최종 합격" },
   { value: "rejected", label: "최종 불합격" },
   { value: "dropped", label: "중도 포기" },
+  { value: "no_feedback", label: "안내받지 못함" },
 ];
 
 // ===== 평점 가이드 문구 =====

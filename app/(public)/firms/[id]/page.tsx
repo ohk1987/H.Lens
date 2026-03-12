@@ -61,6 +61,34 @@ export default function FirmDetailPage() {
               apiHunters = (huntersData.headhunters || []).filter((h: Headhunter) => h.search_firm_id === firmId);
             }
 
+            // 각 헤드헌터의 리뷰를 가져와서 항목별 평균 계산
+            const firmAvgRatings: Ratings = { professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0 };
+            let totalFirmReviews = 0;
+
+            for (const h of apiHunters) {
+              try {
+                const hRes = await fetch(`/api/headhunters/${h.id}`);
+                if (hRes.ok) {
+                  const hData = await hRes.json();
+                  const rc = hData.reviews?.length || 0;
+                  if (rc > 0 && hData.avgRatings) {
+                    (Object.keys(firmAvgRatings) as (keyof Ratings)[]).forEach((k) => {
+                      firmAvgRatings[k] += hData.avgRatings[k] * rc;
+                    });
+                    totalFirmReviews += rc;
+                  }
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            if (totalFirmReviews > 0) {
+              (Object.keys(firmAvgRatings) as (keyof Ratings)[]).forEach((k) => {
+                firmAvgRatings[k] = parseFloat((firmAvgRatings[k] / totalFirmReviews).toFixed(1));
+              });
+            }
+
             // 전문 분야 분포
             const specDist: Record<string, number> = {};
             for (const h of apiHunters) {
@@ -72,8 +100,8 @@ export default function FirmDetailPage() {
             setData({
               firm: apiFirm,
               hunters: apiHunters,
-              avgRatings: { professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0 },
-              reviewCount: apiFirm.stats?.totalReviews || 0,
+              avgRatings: firmAvgRatings,
+              reviewCount: totalFirmReviews || apiFirm.stats?.totalReviews || 0,
               stats: apiFirm.stats || { count: 0, avgRating: 0, totalReviews: 0 },
               specDistribution: Object.entries(specDist).sort((a, b) => b[1] - a[1]),
             });
@@ -176,7 +204,7 @@ export default function FirmDetailPage() {
           {/* 요약 통계 */}
           <div className="flex md:flex-col gap-6 md:gap-3 md:text-right">
             <div>
-              <p className="text-2xl font-bold text-[var(--foreground)]">{stats.avgRating > 0 ? stats.avgRating : "-"}</p>
+              <p className="text-2xl font-bold text-[var(--foreground)]">{stats.avgRating > 0 ? stats.avgRating.toFixed(1) : "-"}</p>
               <p className="text-xs text-[var(--muted)]">평균 평점</p>
             </div>
             <div>
@@ -212,7 +240,7 @@ export default function FirmDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-[var(--muted)]">아직 리뷰가 없습니다.</p>
+              <p className="text-sm text-[var(--muted)]">아직 평점이 없습니다</p>
             )}
           </div>
 

@@ -54,7 +54,7 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
 
       {/* 메타 정보 */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)] mb-3">
-        <span>{formatDate(review.contact_date)}</span>
+        <span>{formatDate(review.created_at)}</span>
         <span>{review.job_field}</span>
         {review.company_size && (
           <span>{COMPANY_SIZE_LABELS[review.company_size] || review.company_size}</span>
@@ -85,9 +85,8 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
       {/* 리뷰 본문 */}
       <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">{review.content}</p>
 
-      {/* 하단: 작성일 + 신고 */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--muted)]">{formatDate(review.created_at)}</p>
+      {/* 하단: 신고 */}
+      <div className="flex items-center justify-end">
         <button className="text-xs text-[var(--muted)] hover:text-red-500 transition flex items-center gap-1">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />

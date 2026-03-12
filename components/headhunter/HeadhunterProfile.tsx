@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
 import { RATING_LABELS, COMPANY_SIZE_LABELS } from "@/lib/review-constants";
 import type { Headhunter, Ratings, VerificationLevel, HeadhunterPosition } from "@/lib/types";
@@ -47,6 +48,7 @@ function formatDate(dateStr: string) {
 
 export default function HeadhunterProfile({ id }: Props) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [hunter, setHunter] = useState<Headhunter | null>(null);
   const [avgRatings, setAvgRatings] = useState<Ratings>({
     professionalism: 0, communication: 0, reliability: 0, support: 0, transparency: 0,
@@ -56,6 +58,8 @@ export default function HeadhunterProfile({ id }: Props) {
   const [positions, setPositions] = useState<HeadhunterPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [interestMap, setInterestMap] = useState<Record<string, boolean>>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const isHeadhunterOwner = session?.user?.userType === "headhunter" && hunter?.claimed_by === session?.user?.id;
   const showCTA = !isHeadhunterOwner && (session ? session.user?.userType !== "headhunter" : true);
@@ -94,6 +98,36 @@ export default function HeadhunterProfile({ id }: Props) {
     }
     fetchData();
   }, [id]);
+
+  // 관심 있어요 토글
+  const handleInterest = async (positionId?: string) => {
+    if (!session) {
+      router.push(`/login?callbackUrl=/headhunters/${id}`);
+      return;
+    }
+
+    const key = positionId || "__general__";
+    const isAlready = interestMap[key];
+
+    try {
+      const res = await fetch("/api/headhunters/interest", {
+        method: isAlready ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headhunter_id: id,
+          position_id: positionId || null,
+        }),
+      });
+
+      if (res.ok) {
+        setInterestMap((prev) => ({ ...prev, [key]: !isAlready }));
+        setToastMessage(isAlready ? "관심이 취소되었습니다" : "관심이 등록되었습니다");
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   if (loading) {
     return (
@@ -218,6 +252,13 @@ export default function HeadhunterProfile({ id }: Props) {
         </div>
       </div>
 
+      {/* 토스트 알림 */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fade-in">
+          {toastMessage}
+        </div>
+      )}
+
       {/* 현재 진행 중인 포지션 */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6">
         <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">현재 진행 중인 포지션</h3>
@@ -241,8 +282,15 @@ export default function HeadhunterProfile({ id }: Props) {
                     <p className="text-xs text-[var(--muted)] mt-2">{formatDate(pos.created_at)}</p>
                   </div>
                   {!isHeadhunterOwner && (
-                    <button className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-primary-600 border border-primary-200 dark:border-primary-800 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition">
-                      관심 있어요
+                    <button
+                      onClick={() => handleInterest(pos.id)}
+                      className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                        interestMap[pos.id]
+                          ? "bg-primary-600 text-white border border-primary-600"
+                          : "text-primary-600 border border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                      }`}
+                    >
+                      {interestMap[pos.id] ? "관심 취소" : "관심 있어요"}
                     </button>
                   )}
                 </div>

@@ -28,7 +28,7 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
   const [mode, setMode] = useState<"search" | "manual">(
     data.matchedHeadhunter ? "search" : "search"
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(data.matchedHeadhunter?.name || "");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -288,7 +288,7 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
       {/* 이메일 */}
       <div>
         <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
-          이메일 <span className="text-[var(--muted)] font-normal text-xs">(선택)</span>
+          이메일 <span className="text-red-500">*</span>
         </label>
         <input
           type="email"
@@ -302,7 +302,7 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
       {/* 핸드폰번호 */}
       <div>
         <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
-          핸드폰번호 <span className="text-[var(--muted)] font-normal text-xs">(선택)</span>
+          핸드폰번호 <span className="text-red-500">*</span>
         </label>
         <input
           type="tel"
@@ -319,7 +319,7 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
       {/* 서치펌 선택 */}
       <div>
         <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
-          소속 서치펌 <span className="text-[var(--muted)] font-normal text-xs">(선택)</span>
+          소속 서치펌/회사명 <span className="text-red-500">*</span>
         </label>
         <select
           value={data.searchFirmId}
@@ -339,7 +339,7 @@ export default function StepHeadhunter({ data, onChange, searchFirms }: Props) {
       {data.searchFirmId === "custom" && (
         <div>
           <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
-            서치펌명 직접 입력
+            서치펌명 직접 입력 <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
