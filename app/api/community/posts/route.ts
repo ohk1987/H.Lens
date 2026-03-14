@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
 import { COMMUNITY_CATEGORIES, COMMUNITY_ACCESS } from "@/lib/community-constants";
+import { awardPoints } from "@/lib/points/award";
 import type { CommunityType } from "@/lib/community-constants";
 
 export const dynamic = "force-dynamic";
@@ -113,6 +114,9 @@ export async function POST(request: NextRequest) {
     console.error("Post create error:", error);
     return NextResponse.json({ error: "작성 실패" }, { status: 500 });
   }
+
+  // 포인트 적립
+  awardPoints(user.id, "community_post", post.id, "community_post").catch(() => {});
 
   return NextResponse.json({ post });
 }

@@ -105,6 +105,12 @@ export default async function MyPage() {
               }`}>
                 {USER_STATUS_LABELS[profile?.status || session.user.status] || "활성"}
               </span>
+              <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                {(profile?.total_points || 0).toLocaleString()} P
+              </span>
+              <Link href="/my/points" className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                포인트 내역
+              </Link>
             </div>
 
             {/* 대표 배지 */}

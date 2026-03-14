@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkAchievements } from "@/lib/achievements/checker";
+import { awardPoints } from "@/lib/points/award";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -121,5 +122,11 @@ export async function POST(request: NextRequest) {
     checkAchievements(session.user.id, "review_verified").catch(() => {});
   }
 
-  return NextResponse.json({ success: true, reviewId: review.id });
+  // 포인트 적립
+  awardPoints(session.user.id, "review_write", review.id, "review").catch(() => {});
+  if (body.evidenceFileUrl) {
+    awardPoints(session.user.id, "review_verified", review.id, "review").catch(() => {});
+  }
+
+  return NextResponse.json({ success: true, reviewId: review.id, pointsEarned: body.evidenceFileUrl ? 300 : 100 });
 }

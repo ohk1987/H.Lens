@@ -89,6 +89,10 @@ export async function checkAchievements(userId: string, trigger: TriggerType) {
         });
 
       if (!error) {
+        // 업적 등급별 포인트
+        const gradePoints: Record<string, number> = { bronze: 30, silver: 50, gold: 100, platinum: 200 };
+        const earnedPoints = gradePoints[achievement.grade] || 50;
+
         newlyAchieved.push({
           id: achievement.id,
           code: achievement.code,
@@ -96,14 +100,22 @@ export async function checkAchievements(userId: string, trigger: TriggerType) {
           grade: achievement.grade,
         });
 
-        // 알림 생성
+        // 알림 생성 (포인트 포함)
         await supabase.from("notifications").insert({
           user_id: userId,
           type: "achievement",
           title: "새 업적 달성!",
           message: `${achievement.name} 업적을 달성했습니다.`,
-          data: { achievement_id: achievement.id, code: achievement.code, grade: achievement.grade },
+          data: { achievement_id: achievement.id, code: achievement.code, grade: achievement.grade, points: earnedPoints },
         });
+
+        // 포인트 적립
+        try {
+          const { awardPoints } = await import("@/lib/points/award");
+          await awardPoints(userId, "achievement", achievement.id, "achievement", earnedPoints, `업적 달성: ${achievement.name}`);
+        } catch {
+          // 포인트 모듈 실패 무시
+        }
       }
     }
   }
@@ -379,4 +391,17 @@ export async function updateLoginStreak(userId: string) {
 
   // 로그인 업적 체크
   await checkAchievements(userId, "login");
+
+  // 로그인 연속 스트릭 포인트
+  try {
+    const { awardPoints } = await import("@/lib/points/award");
+    if (newStreak === 7) {
+      await awardPoints(userId, "login_streak_7", null, null, undefined, "7일 연속 로그인 보너스");
+    }
+    if (newStreak === 30) {
+      await awardPoints(userId, "login_streak_30", null, null, undefined, "30일 연속 로그인 보너스");
+    }
+  } catch {
+    // 포인트 모듈 실패 무시
+  }
 }

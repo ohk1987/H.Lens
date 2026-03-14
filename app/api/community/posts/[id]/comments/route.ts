@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
+import { awardPoints } from "@/lib/points/award";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,9 @@ export async function POST(
     console.error("Comment create error:", error);
     return NextResponse.json({ error: "댓글 작성 실패" }, { status: 500 });
   }
+
+  // 포인트 적립
+  awardPoints(user.id, "community_comment", comment.id, "community_comment").catch(() => {});
 
   // 댓글 수 증가
   await supabase

@@ -6,6 +6,7 @@ interface ToastItem {
   id: string;
   name: string;
   grade: string;
+  points?: number;
 }
 
 const GRADE_COLORS: Record<string, string> = {
@@ -40,10 +41,11 @@ export default function AchievementToast() {
 
       if (unreadAchievements.length > 0) {
         const newToasts = unreadAchievements.map(
-          (n: { id: string; message: string; data: { grade: string } }) => ({
+          (n: { id: string; message: string; data: { grade: string; points?: number } }) => ({
             id: n.id,
             name: n.message,
             grade: n.data?.grade || "bronze",
+            points: n.data?.points,
           })
         );
         setToasts(newToasts);
@@ -92,6 +94,7 @@ export default function AchievementToast() {
             </p>
             <p className="text-xs text-[var(--muted)]">
               {GRADE_LABELS[toast.grade] || toast.grade}
+              {toast.points ? ` +${toast.points}P` : ""}
             </p>
           </div>
           <button

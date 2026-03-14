@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
+import { awardPoints } from "@/lib/points/award";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
     console.error("Reply update error:", error);
     return NextResponse.json({ error: "답글 작성 실패" }, { status: 500 });
   }
+
+  // 포인트 적립
+  awardPoints(user.id, "review_reply", reviewId, "review").catch(() => {});
 
   return NextResponse.json({ success: true });
 }

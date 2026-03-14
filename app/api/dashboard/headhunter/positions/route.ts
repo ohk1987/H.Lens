@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { createAdminClient } from "@/lib/supabase/server";
+import { awardPoints } from "@/lib/points/award";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("Position insert error:", error);
     return NextResponse.json({ error: "등록 실패" }, { status: 500 });
+  }
+
+  // 포인트 적립
+  const { data: posUser } = await supabase.from("users").select("id").eq("email", session.user.email).single();
+  if (posUser) {
+    awardPoints(posUser.id, "position_register", data.id, "position").catch(() => {});
   }
 
   return NextResponse.json({ position: data });
