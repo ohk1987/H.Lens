@@ -14,13 +14,62 @@ import StepSubmit from "./steps/StepSubmit";
 
 interface Props {
   searchFirms: SearchFirm[];
+  editMode?: boolean;
+  editReviewId?: string;
+  editInitialData?: Record<string, unknown> | null;
 }
 
-export default function ReviewForm({ searchFirms }: Props) {
+export default function ReviewForm({ searchFirms, editMode, editReviewId, editInitialData }: Props) {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState<ReviewFormData>(INITIAL_FORM_DATA);
+  const [step, setStep] = useState(editMode ? 1 : 0);
+  const [formData, setFormData] = useState<ReviewFormData>(() => {
+    if (editMode && editInitialData) {
+      const d = editInitialData;
+      const hh = d.headhunters as { id: string; name: string; search_firm_id: string; search_firms?: { id: string; name: string } | null } | null;
+      return {
+        ...INITIAL_FORM_DATA,
+        headhunterId: (d.headhunter_id as string) || null,
+        headhunterName: hh?.name || "",
+        headhunterEmail: "",
+        headhunterPhone: "",
+        searchFirmId: hh?.search_firm_id || "",
+        matchedHeadhunter: hh ? { id: hh.id, name: hh.name, firm_name: hh.search_firms?.name || "" } : null,
+        contactDate: (d.contact_date as string) || "",
+        contactChannel: (d.contact_channel as string) || "",
+        companyName: (d.company_name as string) || "",
+        companySize: (d.company_size as string) || "",
+        industry: (d.industry as string) || "",
+        jobFunction: (d.job_function as string) || "",
+        seniority: (d.career_level as string) || "",
+        progressResult: (d.result as string) || "",
+        ratings: {
+          professionalism: (d.rating_professionalism as number) || 0,
+          communication: (d.rating_communication as number) || 0,
+          reliability: (d.rating_reliability as number) || 0,
+          support: (d.rating_support as number) || 0,
+          transparency: (d.rating_transparency as number) || 0,
+        },
+        hrExtraRatings: {
+          feeAdequacy: (d.hr_rating_fee as number) || 0,
+          guaranteeSatisfaction: (d.hr_rating_guarantee as number) || 0,
+          contractTerms: (d.hr_rating_contract as number) || 0,
+        },
+        keywordsPositive: (d.keywords_positive as string[]) || [],
+        keywordsNegative: (d.keywords_negative as string[]) || [],
+        content: (d.content as string) || "",
+        overallRating: (d.rating_overall as number) || 0,
+        wouldRecommend: d.recommend as boolean | null,
+        customPositiveKeyword: "",
+        customNegativeKeyword: "",
+        contactChannelDetail: "",
+        contactChannelCustom: "",
+        searchFirmCustom: "",
+        evidenceFile: null,
+      };
+    }
+    return INITIAL_FORM_DATA;
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -152,8 +201,11 @@ export default function ReviewForm({ searchFirms }: Props) {
       }
 
       // 2. 리뷰 저장 API 호출
-      const res = await fetch("/api/reviews", {
-        method: "POST",
+      const apiUrl = editMode && editReviewId ? `/api/reviews/${editReviewId}` : "/api/reviews";
+      const apiMethod = editMode ? "PATCH" : "POST";
+
+      const res = await fetch(apiUrl, {
+        method: apiMethod,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           headhunterId: formData.headhunterId,
@@ -204,26 +256,41 @@ export default function ReviewForm({ searchFirms }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-3">리뷰가 제출되었습니다!</h2>
+        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-3">
+          {editMode ? "리뷰가 수정되었습니다!" : "리뷰가 제출되었습니다!"}
+        </h2>
         <p className="text-[var(--muted)] mb-2">
-          {formData.evidenceFile
+          {editMode
+            ? "수정된 내용이 반영되었습니다."
+            : formData.evidenceFile
             ? "증빙 파일이 접수되었습니다. 검토 후 인증 리뷰로 전환됩니다."
             : "일반 리뷰로 즉시 공개됩니다."}
         </p>
         <p className="text-sm text-[var(--muted)] mb-8">소중한 리뷰 감사합니다.</p>
         <div className="flex gap-3 justify-center">
-          <a
-            href="/headhunters"
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition"
-          >
-            헤드헌터 목록 보기
-          </a>
-          <a
-            href="/reviews/new"
-            className="px-6 py-2.5 border border-[var(--card-border)] text-[var(--foreground)] rounded-xl font-medium hover:bg-[var(--muted-bg)] transition"
-          >
-            리뷰 하나 더 작성
-          </a>
+          {editMode ? (
+            <a
+              href="/my"
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition"
+            >
+              마이페이지로 돌아가기
+            </a>
+          ) : (
+            <>
+              <a
+                href="/headhunters"
+                className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition"
+              >
+                헤드헌터 목록 보기
+              </a>
+              <a
+                href="/reviews/new"
+                className="px-6 py-2.5 border border-[var(--card-border)] text-[var(--foreground)] rounded-xl font-medium hover:bg-[var(--muted-bg)] transition"
+              >
+                리뷰 하나 더 작성
+              </a>
+            </>
+          )}
         </div>
       </div>
     );
@@ -289,7 +356,7 @@ export default function ReviewForm({ searchFirms }: Props) {
 
       {/* 스텝 컨텐츠 */}
       <div className="min-h-[300px]">
-        {step === 0 && (
+        {step === 0 && !editMode && (
           <StepHeadhunter data={formData} onChange={updateForm} searchFirms={searchFirms} />
         )}
         {step === 1 && (

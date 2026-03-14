@@ -164,9 +164,15 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Mobile Overlay + Nav */}
       {mobileOpen && (
-        <nav className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-4 space-y-3">
+        <div
+          className="fixed inset-0 top-16 bg-black/30 z-40 md:hidden"
+          onClick={() => { setMobileOpen(false); setFindOpen(false); }}
+        />
+      )}
+      {mobileOpen && (
+        <nav className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-4 space-y-3 relative z-50">
           {/* 찾기 드롭다운 (모바일) */}
           <div>
             <button

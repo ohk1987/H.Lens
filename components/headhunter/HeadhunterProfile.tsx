@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
-import { RATING_LABELS, COMPANY_SIZE_LABELS } from "@/lib/review-constants";
+import { RATING_LABELS, COMPANY_SIZE_LABELS, HR_EXTRA_RATING_LABELS } from "@/lib/review-constants";
 import type { Headhunter, Ratings, VerificationLevel, HeadhunterPosition } from "@/lib/types";
 import RatingTrendChart from "./TrendChart";
 import Link from "next/link";
@@ -55,6 +55,7 @@ export default function HeadhunterProfile({ id }: Props) {
   });
   const [topPercentage, setTopPercentage] = useState<number | null>(null);
   const [trendData, setTrendData] = useState<{ date: string; rating: number }[]>([]);
+  const [hrAvgRatings, setHrAvgRatings] = useState<{ feeAdequacy: number; guaranteeSatisfaction: number; contractTerms: number } | null>(null);
   const [positions, setPositions] = useState<HeadhunterPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -79,6 +80,22 @@ export default function HeadhunterProfile({ id }: Props) {
               date: r.created_at,
               rating: r.nps_score / 2,
             })));
+            // HR 평점 평균 계산
+            const hrReviews = data.reviews.filter((r: { reviewer_type: string; hr_rating_fee?: number }) =>
+              r.reviewer_type === "hr_manager" && r.hr_rating_fee != null
+            );
+            if (hrReviews.length > 0) {
+              const sum = hrReviews.reduce((acc: { fee: number; guarantee: number; contract: number }, r: { hr_rating_fee: number; hr_rating_guarantee: number; hr_rating_contract: number }) => ({
+                fee: acc.fee + (r.hr_rating_fee || 0),
+                guarantee: acc.guarantee + (r.hr_rating_guarantee || 0),
+                contract: acc.contract + (r.hr_rating_contract || 0),
+              }), { fee: 0, guarantee: 0, contract: 0 });
+              setHrAvgRatings({
+                feeAdequacy: sum.fee / hrReviews.length,
+                guaranteeSatisfaction: sum.guarantee / hrReviews.length,
+                contractTerms: sum.contract / hrReviews.length,
+              });
+            }
           }
           setLoading(false);
           return;
@@ -249,6 +266,39 @@ export default function HeadhunterProfile({ id }: Props) {
               </div>
             ))}
           </div>
+
+          {/* HR 담당자 평가 */}
+          {hrAvgRatings && (
+            <div className="mt-6 pt-5 border-t border-[var(--card-border)]">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                  HR 담당자
+                </span>
+                <h4 className="text-sm font-semibold text-[var(--foreground)]">HR 담당자 평가</h4>
+              </div>
+              <div className="space-y-4">
+                {(Object.keys(HR_EXTRA_RATING_LABELS) as (keyof typeof HR_EXTRA_RATING_LABELS)[]).map((key) => {
+                  const ratingValue = key === "feeAdequacy" ? hrAvgRatings.feeAdequacy
+                    : key === "guaranteeSatisfaction" ? hrAvgRatings.guaranteeSatisfaction
+                    : hrAvgRatings.contractTerms;
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-[var(--muted)]">{HR_EXTRA_RATING_LABELS[key]}</span>
+                        <span className="font-semibold text-[var(--foreground)]">{ratingValue.toFixed(1)}</span>
+                      </div>
+                      <div className="h-2.5 bg-[var(--muted-bg)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500"
+                          style={{ width: `${(ratingValue / 5) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

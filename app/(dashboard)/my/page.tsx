@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { USER_TYPE_LABELS, USER_STATUS_LABELS } from "@/lib/constants";
 import Link from "next/link";
 import AchievementsSection from "@/components/my/AchievementsSection";
+import NicknameEditor from "@/components/my/NicknameEditor";
+import ReviewActions from "@/components/my/ReviewActions";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
@@ -91,7 +93,7 @@ export default async function MyPage() {
               {profile?.name || session.user.name}
             </h2>
             {profile?.nickname && (
-              <p className="text-sm text-[var(--muted)]">@{profile.nickname}</p>
+              <NicknameEditor initialNickname={profile.nickname} />
             )}
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-[var(--muted)]">
@@ -154,10 +156,22 @@ export default async function MyPage() {
       {/* 상태별 안내 */}
       {(profile?.status || session.user.status) === "pending" && (
         <section className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-6">
-          <h3 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">인증 대기중</h3>
-          <p className="text-sm text-amber-700 dark:text-amber-400">
-            제출하신 서류를 검토 중입니다. 1~2 영업일 내 승인 처리됩니다.
-          </p>
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="font-semibold text-amber-800 dark:text-amber-300">인증 대기중</h3>
+          </div>
+          <div className="space-y-2 text-sm text-amber-700 dark:text-amber-400">
+            <p>서류 검토는 영업일 기준 1~2일 소요됩니다.</p>
+            <p>검토 완료 후 이메일로 안내드립니다.</p>
+            <p>문의: <a href="mailto:support@hlens.app" className="underline font-medium">support@hlens.app</a></p>
+          </div>
+          {profile?.created_at && (
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-3 pt-3 border-t border-amber-200 dark:border-amber-700">
+              서류 제출일: {new Date(profile.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          )}
         </section>
       )}
 
@@ -181,50 +195,55 @@ export default async function MyPage() {
             {myReviews.map((review) => {
               const hh = review.headhunters as unknown as { name: string; search_firms: { name: string } | null } | null;
               return (
-                <Link
+                <div
                   key={review.id}
-                  href={`/headhunters/${review.headhunter_id}`}
-                  className="block bg-[var(--muted-bg)] rounded-xl p-4 hover:bg-[var(--card-border)] transition"
+                  className="bg-[var(--muted-bg)] rounded-xl p-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
-                        {hh?.name?.charAt(0) || "?"}
+                  <Link
+                    href={`/headhunters/${review.headhunter_id}`}
+                    className="block hover:opacity-80 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
+                          {hh?.name?.charAt(0) || "?"}
+                        </div>
+                        <div>
+                          <p className="font-medium text-[var(--foreground)] text-sm">
+                            {hh?.name || "알 수 없음"}
+                          </p>
+                          <p className="text-xs text-[var(--muted)]">
+                            {hh?.search_firms?.name || ""}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-[var(--foreground)] text-sm">
-                          {hh?.name || "알 수 없음"}
-                        </p>
-                        <p className="text-xs text-[var(--muted)]">
-                          {hh?.search_firms?.name || ""}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        {review.verification_status === "verified" && (
+                          <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                            인증됨
+                          </span>
+                        )}
+                        {review.verification_status === "pending" && (
+                          <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                            검토 중
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                          <span className="text-sm font-bold text-[var(--foreground)]">
+                            {review.rating_overall}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {review.verification_status === "verified" && (
-                        <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                          인증됨
-                        </span>
-                      )}
-                      {review.verification_status === "pending" && (
-                        <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                          검토 중
-                        </span>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                        <span className="text-sm font-bold text-[var(--foreground)]">
-                          {review.rating_overall}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-[var(--muted)] mt-2">
-                    {new Date(review.created_at).toLocaleDateString("ko-KR")}
-                  </p>
-                </Link>
+                    <p className="text-xs text-[var(--muted)] mt-2">
+                      {new Date(review.created_at).toLocaleDateString("ko-KR")}
+                    </p>
+                  </Link>
+                  <ReviewActions reviewId={review.id} />
+                </div>
               );
             })}
           </div>

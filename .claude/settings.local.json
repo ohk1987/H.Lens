@@ -22,7 +22,8 @@
       "Bash(cat /d/H.Lens/app/\\\\\\(public\\\\\\)/firms/\\\\[id\\\\]/page.tsx)",
       "Bash(cd D:/H.Lens && npx playwright install chromium 2>&1 | tail -5)",
       "Bash(cd D:/H.Lens && npx playwright test tests/05-auth.spec.ts --headed 2>&1)",
-      "Bash(cd D:/H.Lens && npx playwright test --headed 2>&1)"
+      "Bash(cd D:/H.Lens && npx playwright test --headed 2>&1)",
+      "Bash(ls \"D:\\\\H.Lens\\\\app\\\\\\(public\\)\\\\reviews\")"
     ]
   }
 }

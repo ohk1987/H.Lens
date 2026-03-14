@@ -44,16 +44,18 @@ export default function HeadhunterCard({ headhunter, compact }: Props) {
           <p className="text-sm text-[var(--muted)] mt-0.5">{headhunter.firm_name}</p>
 
           {/* Specialty Tags */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {headhunter.specialty_fields.slice(0, 3).map((field) => (
-              <span
-                key={field}
-                className="text-xs bg-[var(--muted-bg)] text-[var(--muted)] px-2 py-0.5 rounded-md"
-              >
-                {field}
-              </span>
-            ))}
-          </div>
+          {headhunter.specialty_fields.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {headhunter.specialty_fields.slice(0, 3).map((field) => (
+                <span
+                  key={field}
+                  className="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-2 py-0.5 rounded-full"
+                >
+                  {field}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Rating + Review Count (simplified) */}
           <div className="mt-3">

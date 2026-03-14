@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useCallback } from "react";
 
 interface Props {
   label: string;
@@ -25,6 +25,19 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
   // 별이 채워지는 기준값 (hover 우선, 없으면 value, 둘 다 0이면 -1로 아무것도 안 채움)
   const fillLevel = hover > 0 ? hover : value > 0 ? value : -1;
 
+  const step = halfStep ? 0.5 : 1;
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const next = Math.min(5, value + step);
+      onChange(next);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const prev = Math.max(step, value - step);
+      onChange(prev);
+    }
+  }, [value, step, onChange]);
+
   if (halfStep) {
     return (
       <div className="space-y-1.5">
@@ -39,9 +52,18 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
             {displayGuide}
           </p>
         )}
-        <div className="flex gap-0.5">
+        <div
+          className="flex gap-0.5"
+          role="slider"
+          aria-label={`${label} ${value}점`}
+          aria-valuemin={0.5}
+          aria-valuemax={5}
+          aria-valuenow={value}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+        >
           {[1, 2, 3, 4, 5].map((star) => (
-            <div key={star} className="relative cursor-pointer">
+            <div key={star} className="relative cursor-pointer p-1">
               {/* Left half */}
               <div
                 className="absolute inset-0 w-1/2 z-10"
@@ -56,7 +78,7 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
                 onMouseLeave={() => setHover(0)}
                 onClick={() => onChange(star)}
               />
-              <svg className="w-8 h-8" viewBox="0 0 24 24">
+              <svg className="w-10 h-10" viewBox="0 0 24 24">
                 {/* Background star (empty outline) */}
                 <path
                   d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
@@ -102,18 +124,28 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
           {displayGuide}
         </p>
       )}
-      <div className="flex gap-1">
+      <div
+        className="flex gap-1"
+        role="slider"
+        aria-label={`${label} ${value}점`}
+        aria-valuemin={1}
+        aria-valuemax={5}
+        aria-valuenow={value}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+      >
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type="button"
+            tabIndex={-1}
             onMouseEnter={() => setHover(star)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(star)}
-            className="transition"
+            className="p-1 transition"
           >
             <svg
-              className={`w-8 h-8 transition-colors`}
+              className="w-10 h-10 transition-colors"
               viewBox="0 0 24 24"
             >
               <path

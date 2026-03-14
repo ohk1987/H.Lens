@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import type { Review, Ratings } from "@/lib/types";
 import { RATING_LABELS, COMPANY_SIZE_LABELS } from "@/lib/review-constants";
 
@@ -22,8 +23,18 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+const REPORT_TYPES = [
+  { value: "fake", label: "허위 리뷰" },
+  { value: "abuse", label: "욕설/비방" },
+  { value: "privacy", label: "개인정보 노출" },
+  { value: "other", label: "기타" },
+];
+
 export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
+  const { data: session } = useSession();
   const avgRating = Object.values(review.ratings).reduce((a, b) => a + b, 0) / 5;
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
 
   return (
     <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
@@ -85,15 +96,39 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
       {/* 리뷰 본문 */}
       <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">{review.content}</p>
 
-      {/* 하단: 신고 */}
-      <div className="flex items-center justify-end">
-        <button className="text-xs text-[var(--muted)] hover:text-red-500 transition flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+      {/* 하단: 더보기 메뉴 */}
+      <div className="flex items-center justify-end relative">
+        <button
+          onClick={() => setReportMenuOpen(!reportMenuOpen)}
+          className="text-[var(--muted)] hover:text-[var(--foreground)] transition p-1 rounded"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
           </svg>
-          신고
         </button>
+        {reportMenuOpen && (
+          <div className="absolute right-0 bottom-full mb-1 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+            <button
+              onClick={() => { setReportMenuOpen(false); setShowReportModal(true); }}
+              className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-[var(--muted-bg)] transition flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
+              </svg>
+              신고하기
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* 신고 모달 */}
+      {showReportModal && (
+        <ReportModal
+          reviewId={review.id}
+          isLoggedIn={!!session}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {/* 헤드헌터 답글 */}
       {review.headhunter_reply && (
@@ -113,6 +148,113 @@ export default function ReviewCard({ review, showReplyForm, onReply }: Props) {
       {showReplyForm && !review.headhunter_reply && (
         <ReplyForm reviewId={review.id} onSubmit={onReply} />
       )}
+    </div>
+  );
+}
+
+function ReportModal({ reviewId, isLoggedIn, onClose }: { reviewId: string; isLoggedIn: boolean; onClose: () => void }) {
+  const [reportType, setReportType] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!reportType) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ review_id: reviewId, report_type: reportType, reason: reason.trim() }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
+          <p className="text-sm text-[var(--foreground)] mb-4">신고하려면 로그인이 필요합니다.</p>
+          <button onClick={onClose} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition">
+            확인
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 max-w-md mx-4 shadow-xl w-full">
+        {submitted ? (
+          <div className="text-center py-4">
+            <svg className="w-12 h-12 mx-auto text-emerald-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium text-[var(--foreground)] mb-4">신고가 접수되었습니다.</p>
+            <button onClick={onClose} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition">
+              확인
+            </button>
+          </div>
+        ) : (
+          <>
+            <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">리뷰 신고</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)] mb-2">신고 유형</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {REPORT_TYPES.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setReportType(t.value)}
+                      className={`text-xs px-3 py-2 rounded-lg border transition ${
+                        reportType === t.value
+                          ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                          : "border-[var(--card-border)] text-[var(--muted)] hover:border-red-300"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--foreground)] mb-2">신고 사유 (선택)</p>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  maxLength={200}
+                  className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] resize-none h-20 focus:ring-2 focus:ring-red-500 outline-none"
+                  placeholder="구체적인 사유를 입력해주세요. (최대 200자)"
+                />
+                <p className="text-xs text-[var(--muted)] text-right mt-1">{reason.length}/200</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm border border-[var(--card-border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--muted-bg)] transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!reportType || submitting}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-xl hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {submitting ? "제출 중..." : "신고 접수"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
