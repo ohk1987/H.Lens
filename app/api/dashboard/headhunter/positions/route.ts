@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, industry, company_size, career_min, career_max, description } = body;
+  const { title, industry, company_size, career_min, career_max, description, actual_company_name, company_description } = body;
 
   if (!title || !industry || !company_size) {
     return NextResponse.json({ error: "필수 항목을 입력해주세요." }, { status: 400 });
@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
       career_min: career_min || 0,
       career_max: career_max || 0,
       description: description || null,
+      actual_company_name: actual_company_name || null,
+      company_description: company_description || null,
     })
     .select()
     .single();
@@ -98,6 +100,8 @@ export async function PATCH(request: NextRequest) {
   if ("career_min" in updates) allowedFields.career_min = updates.career_min;
   if ("career_max" in updates) allowedFields.career_max = updates.career_max;
   if ("description" in updates) allowedFields.description = updates.description;
+  if ("actual_company_name" in updates) allowedFields.actual_company_name = updates.actual_company_name;
+  if ("company_description" in updates) allowedFields.company_description = updates.company_description;
 
   const { error } = await supabase
     .from("headhunter_positions")

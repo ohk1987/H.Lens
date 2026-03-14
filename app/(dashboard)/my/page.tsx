@@ -7,6 +7,7 @@ import Link from "next/link";
 import AchievementsSection from "@/components/my/AchievementsSection";
 import NicknameEditor from "@/components/my/NicknameEditor";
 import ReviewActions from "@/components/my/ReviewActions";
+import MyPageTabs from "@/components/my/MyPageTabs";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
@@ -184,73 +185,73 @@ export default async function MyPage() {
         </section>
       )}
 
-      {/* 업적 섹션 (클라이언트 컴포넌트) */}
-      <AchievementsSection />
-
-      {/* 내가 작성한 리뷰 */}
-      <section className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6">
-        <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">내가 작성한 리뷰</h2>
-        {myReviews && myReviews.length > 0 ? (
-          <div className="space-y-3">
-            {myReviews.map((review) => {
-              const hh = review.headhunters as unknown as { name: string; search_firms: { name: string } | null } | null;
-              return (
-                <div
-                  key={review.id}
-                  className="bg-[var(--muted-bg)] rounded-xl p-4"
-                >
-                  <Link
-                    href={`/headhunters/${review.headhunter_id}`}
-                    className="block hover:opacity-80 transition"
+      {/* 탭 기반 콘텐츠 */}
+      <MyPageTabs
+        showInterestedTab={profile?.user_type !== "headhunter"}
+        reviewsContent={
+          myReviews && myReviews.length > 0 ? (
+            <div className="space-y-3">
+              {myReviews.map((review) => {
+                const hh = review.headhunters as unknown as { name: string; search_firms: { name: string } | null } | null;
+                return (
+                  <div
+                    key={review.id}
+                    className="bg-[var(--muted-bg)] rounded-xl p-4"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
-                          {hh?.name?.charAt(0) || "?"}
+                    <Link
+                      href={`/headhunters/${review.headhunter_id}`}
+                      className="block hover:opacity-80 transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
+                            {hh?.name?.charAt(0) || "?"}
+                          </div>
+                          <div>
+                            <p className="font-medium text-[var(--foreground)] text-sm">
+                              {hh?.name || "알 수 없음"}
+                            </p>
+                            <p className="text-xs text-[var(--muted)]">
+                              {hh?.search_firms?.name || ""}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-[var(--foreground)] text-sm">
-                            {hh?.name || "알 수 없음"}
-                          </p>
-                          <p className="text-xs text-[var(--muted)]">
-                            {hh?.search_firms?.name || ""}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          {review.verification_status === "verified" && (
+                            <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                              인증됨
+                            </span>
+                          )}
+                          {review.verification_status === "pending" && (
+                            <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                              검토 중
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <span className="text-sm font-bold text-[var(--foreground)]">
+                              {review.rating_overall}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {review.verification_status === "verified" && (
-                          <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                            인증됨
-                          </span>
-                        )}
-                        {review.verification_status === "pending" && (
-                          <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                            검토 중
-                          </span>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                          <span className="text-sm font-bold text-[var(--foreground)]">
-                            {review.rating_overall}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-[var(--muted)] mt-2">
-                      {new Date(review.created_at).toLocaleDateString("ko-KR")}
-                    </p>
-                  </Link>
-                  <ReviewActions reviewId={review.id} />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-[var(--muted)] text-sm">작성한 리뷰가 없습니다.</p>
-        )}
-      </section>
+                      <p className="text-xs text-[var(--muted)] mt-2">
+                        {new Date(review.created_at).toLocaleDateString("ko-KR")}
+                      </p>
+                    </Link>
+                    <ReviewActions reviewId={review.id} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[var(--muted)] text-sm">작성한 리뷰가 없습니다.</p>
+          )
+        }
+        achievementsContent={<AchievementsSection />}
+      />
     </div>
   );
 }

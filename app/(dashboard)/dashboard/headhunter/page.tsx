@@ -81,7 +81,7 @@ export default function HeadhunterDashboardPage() {
 
   // 포지션 폼
   const [showPositionForm, setShowPositionForm] = useState(false);
-  const [posForm, setPosForm] = useState({ title: "", industry: "", company_size: "", career_min: 0, career_max: 0, description: "" });
+  const [posForm, setPosForm] = useState({ title: "", industry: "", company_size: "", career_min: 0, career_max: 0, description: "", actual_company_name: "", company_description: "" });
   const [posSubmitting, setPosSubmitting] = useState(false);
 
   // 답글 폼
@@ -138,7 +138,7 @@ export default function HeadhunterDashboardPage() {
       if (res.ok) {
         const { position } = await res.json();
         setData((prev) => prev ? { ...prev, positions: [position, ...prev.positions] } : prev);
-        setPosForm({ title: "", industry: "", company_size: "", career_min: 0, career_max: 0, description: "" });
+        setPosForm({ title: "", industry: "", company_size: "", career_min: 0, career_max: 0, description: "", actual_company_name: "", company_description: "" });
         setShowPositionForm(false);
       } else {
         const d = await res.json();
@@ -268,12 +268,20 @@ export default function HeadhunterDashboardPage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)]">내 대시보드</h1>
-        <Link
-          href="/dashboard/headhunter/edit"
-          className="px-4 py-2 text-sm font-medium text-primary-600 border border-primary-200 dark:border-primary-800 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
-        >
-          프로필 편집
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/headhunter/candidates"
+            className="px-4 py-2 text-sm font-medium text-primary-600 border border-primary-200 dark:border-primary-800 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
+          >
+            지원자 관리
+          </Link>
+          <Link
+            href="/dashboard/headhunter/edit"
+            className="px-4 py-2 text-sm font-medium text-primary-600 border border-primary-200 dark:border-primary-800 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
+          >
+            프로필 편집
+          </Link>
+        </div>
       </div>
 
       {/* 상단 - 내 프로필 현황 */}
@@ -498,6 +506,29 @@ export default function HeadhunterDashboardPage() {
                 placeholder="상세 설명 (선택)"
                 className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] resize-none h-16 focus:ring-2 focus:ring-primary-500 outline-none"
               />
+              <div>
+                <label className="text-xs text-[var(--muted)] mb-1 block">실제 회사명 (비공개)</label>
+                <input
+                  type="text"
+                  value={posForm.actual_company_name}
+                  onChange={(e) => setPosForm({ ...posForm, actual_company_name: e.target.value })}
+                  placeholder="실제 채용 기업명을 입력해주세요"
+                  className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:ring-2 focus:ring-primary-500 outline-none"
+                />
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  실제 회사명은 헤드헌터님의 포지션 관리를 위해서만 사용되며 구직자에게는 공개되지 않습니다.
+                </p>
+              </div>
+              <div>
+                <label className="text-xs text-[var(--muted)] mb-1 block">공개용 회사 소개 (선택)</label>
+                <input
+                  type="text"
+                  value={posForm.company_description}
+                  onChange={(e) => setPosForm({ ...posForm, company_description: e.target.value })}
+                  placeholder="예) 국내 대형 핀테크 기업"
+                  className="w-full bg-[var(--muted-bg)] border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:ring-2 focus:ring-primary-500 outline-none"
+                />
+              </div>
               <button
                 onClick={handleAddPosition}
                 disabled={posSubmitting || !posForm.title || !posForm.industry || !posForm.company_size}
