@@ -9,6 +9,7 @@ export default function Header() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const findRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
@@ -18,6 +19,19 @@ export default function Header() {
   const isActiveHeadhunter =
     session?.user?.userType === "headhunter" &&
     session?.user?.status === "active";
+
+  // 미읽음 메시지 수 폴링
+  useEffect(() => {
+    if (!session?.user) return;
+    const fetchUnread = () =>
+      fetch("/api/messages/unread-count")
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => d && setUnreadCount(d.count))
+        .catch(() => {});
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [session?.user]);
 
   // 드롭다운 외부 클릭 시 닫힘
   useEffect(() => {
@@ -111,6 +125,16 @@ export default function Header() {
 
           {session?.user ? (
             <>
+              <Link href="/messages" className="relative text-[var(--muted)] hover:text-primary-600 transition" title="메시지">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </Link>
               <Link href="/my" className="text-sm text-[var(--muted)] hover:text-primary-600 transition">
                 마이페이지
               </Link>
@@ -246,6 +270,18 @@ export default function Header() {
 
           {session?.user ? (
             <>
+              <Link
+                href="/messages"
+                className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-primary-600"
+                onClick={() => setMobileOpen(false)}
+              >
+                메시지
+                {unreadCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </Link>
               <Link
                 href="/my"
                 className="block text-sm text-[var(--muted)] hover:text-primary-600"

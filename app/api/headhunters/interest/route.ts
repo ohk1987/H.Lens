@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       conversationId = newConv?.id || null;
     }
 
-    // 헤드헌터에게 알림 전송
+    // 헤드헌터에게 알림 전송 (실패해도 무시)
     await supabase
       .from("notifications")
       .insert({
@@ -108,9 +108,7 @@ export async function POST(request: NextRequest) {
           position_id: position_id || null,
           conversation_id: conversationId,
         }),
-      })
-      .then(() => {})
-      .catch(() => {});
+      });
   }
 
   return NextResponse.json({ success: true, conversation_id: conversationId });
