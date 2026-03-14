@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 
 interface Props {
   label: string;
@@ -13,6 +13,7 @@ interface Props {
 
 export default function StarRating({ label, value, onChange, guide, scoreGuides, halfStep }: Props) {
   const [hover, setHover] = useState(0);
+  const uniqueId = useId();
 
   // 가이드 텍스트: hover 시 hover 점수 가이드, 그 외엔 선택된 점수 가이드 고정
   const hoverKey = halfStep ? Math.ceil(hover) : Math.round(hover);
@@ -64,7 +65,7 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
                 />
                 {/* Filled portion */}
                 <defs>
-                  <clipPath id={`clip-${label}-${star}`}>
+                  <clipPath id={`clip-${uniqueId}-${star}`}>
                     <rect
                       x="0" y="0"
                       width={
@@ -78,7 +79,7 @@ export default function StarRating({ label, value, onChange, guide, scoreGuides,
                 <path
                   d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                   className="fill-yellow-400"
-                  clipPath={`url(#clip-${label}-${star})`}
+                  clipPath={`url(#clip-${uniqueId}-${star})`}
                 />
               </svg>
             </div>
