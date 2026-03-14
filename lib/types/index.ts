@@ -75,6 +75,8 @@ export interface Headhunter {
   claimed_by: string | null;
   is_claimed: boolean;
   verification_level: VerificationLevel;
+  response_rate: number | null;
+  avg_response_hours: number | null;
   created_at: string;
   // 조인 데이터
   search_firm?: SearchFirm;

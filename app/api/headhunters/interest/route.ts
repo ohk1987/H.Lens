@@ -52,7 +52,68 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "관심 등록에 실패했습니다." }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // 헤드헌터 프로필에서 claimed_by(=users.id)를 찾아 대화방 생성
+  const { data: hhData } = await supabase
+    .from("headhunters")
+    .select("claimed_by")
+    .eq("id", headhunter_id)
+    .single();
+
+  let conversationId: string | null = null;
+
+  if (hhData?.claimed_by) {
+    // 대화방 중복 확인
+    let convQuery = supabase
+      .from("conversations")
+      .select("id")
+      .eq("headhunter_id", hhData.claimed_by)
+      .eq("participant_id", session.user.id);
+
+    if (position_id) {
+      convQuery = convQuery.eq("position_id", position_id);
+    } else {
+      convQuery = convQuery.is("position_id", null);
+    }
+
+    const { data: existingConv } = await convQuery.maybeSingle();
+
+    if (existingConv) {
+      conversationId = existingConv.id;
+    } else {
+      const { data: newConv } = await supabase
+        .from("conversations")
+        .insert({
+          headhunter_id: hhData.claimed_by,
+          participant_id: session.user.id,
+          participant_type: session.user.userType,
+          position_id: position_id || null,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      conversationId = newConv?.id || null;
+    }
+
+    // 헤드헌터에게 알림 전송
+    await supabase
+      .from("notifications")
+      .insert({
+        user_id: hhData.claimed_by,
+        type: "interest",
+        title: "새로운 관심 표현",
+        message: "포지션에 관심을 표현한 사용자가 있습니다.",
+        data: JSON.stringify({
+          headhunter_id,
+          position_id: position_id || null,
+          conversation_id: conversationId,
+        }),
+      })
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  return NextResponse.json({ success: true, conversation_id: conversationId });
 }
 
 export async function DELETE(request: NextRequest) {

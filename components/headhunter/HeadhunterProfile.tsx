@@ -7,6 +7,7 @@ import { MOCK_HEADHUNTERS, getHeadhunterAvgRatings } from "@/lib/mock-data";
 import { RATING_LABELS, COMPANY_SIZE_LABELS, HR_EXTRA_RATING_LABELS } from "@/lib/review-constants";
 import type { Headhunter, Ratings, VerificationLevel, HeadhunterPosition } from "@/lib/types";
 import RatingTrendChart from "./TrendChart";
+import InterestModal from "./InterestModal";
 import Link from "next/link";
 
 interface Props {
@@ -61,6 +62,7 @@ export default function HeadhunterProfile({ id }: Props) {
   const [notFound, setNotFound] = useState(false);
   const [interestMap, setInterestMap] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [interestModal, setInterestModal] = useState<{ positionId?: string; positionTitle?: string } | null>(null);
 
   const isHeadhunterOwner = session?.user?.userType === "headhunter" && hunter?.claimed_by === session?.user?.id;
   const showCTA = !isHeadhunterOwner && (session ? session.user?.userType !== "headhunter" : true);
@@ -116,8 +118,8 @@ export default function HeadhunterProfile({ id }: Props) {
     fetchData();
   }, [id]);
 
-  // 관심 있어요 토글
-  const handleInterest = async (positionId?: string) => {
+  // 관심 있어요 - 모달 표시 or 취소 처리
+  const handleInterestClick = (positionId?: string, positionTitle?: string) => {
     if (!session) {
       router.push(`/login?callbackUrl=/headhunters/${id}`);
       return;
@@ -126,9 +128,23 @@ export default function HeadhunterProfile({ id }: Props) {
     const key = positionId || "__general__";
     const isAlready = interestMap[key];
 
+    if (isAlready) {
+      // 취소는 바로 처리
+      handleInterestCancel(positionId);
+    } else {
+      // 등록은 모달로 확인
+      setInterestModal({ positionId, positionTitle });
+    }
+  };
+
+  const handleInterestConfirm = async () => {
+    if (!interestModal) return;
+    const positionId = interestModal.positionId;
+    const key = positionId || "__general__";
+
     try {
       const res = await fetch("/api/headhunters/interest", {
-        method: isAlready ? "DELETE" : "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           headhunter_id: id,
@@ -137,8 +153,33 @@ export default function HeadhunterProfile({ id }: Props) {
       });
 
       if (res.ok) {
-        setInterestMap((prev) => ({ ...prev, [key]: !isAlready }));
-        setToastMessage(isAlready ? "관심이 취소되었습니다" : "관심이 등록되었습니다");
+        setInterestMap((prev) => ({ ...prev, [key]: true }));
+        setToastMessage("관심이 등록되었습니다");
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setInterestModal(null);
+    }
+  };
+
+  const handleInterestCancel = async (positionId?: string) => {
+    const key = positionId || "__general__";
+
+    try {
+      const res = await fetch("/api/headhunters/interest", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headhunter_id: id,
+          position_id: positionId || null,
+        }),
+      });
+
+      if (res.ok) {
+        setInterestMap((prev) => ({ ...prev, [key]: false }));
+        setToastMessage("관심이 취소되었습니다");
         setTimeout(() => setToastMessage(null), 3000);
       }
     } catch {
@@ -234,6 +275,22 @@ export default function HeadhunterProfile({ id }: Props) {
               <p className="text-lg font-bold text-[var(--foreground)]">{hunter.review_count}</p>
               <p className="text-xs text-[var(--muted)]">전체 리뷰 수</p>
             </div>
+            {hunter.response_rate != null && hunter.response_rate > 0 && (
+              <div>
+                <p className="text-lg font-bold text-emerald-600">{hunter.response_rate}%</p>
+                <p className="text-xs text-[var(--muted)]">응답률</p>
+              </div>
+            )}
+            {hunter.avg_response_hours != null && hunter.avg_response_hours > 0 && (
+              <div>
+                <p className="text-lg font-bold text-[var(--foreground)]">
+                  {hunter.avg_response_hours < 1
+                    ? "1시간 이내"
+                    : `${Math.round(hunter.avg_response_hours)}시간`}
+                </p>
+                <p className="text-xs text-[var(--muted)]">평균 응답시간</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -333,7 +390,7 @@ export default function HeadhunterProfile({ id }: Props) {
                   </div>
                   {!isHeadhunterOwner && (
                     <button
-                      onClick={() => handleInterest(pos.id)}
+                      onClick={() => handleInterestClick(pos.id, pos.title)}
                       className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
                         interestMap[pos.id]
                           ? "bg-primary-600 text-white border border-primary-600"
@@ -351,6 +408,16 @@ export default function HeadhunterProfile({ id }: Props) {
           <p className="text-sm text-[var(--muted)] text-center py-6">등록된 포지션이 없습니다</p>
         )}
       </div>
+
+      {/* 관심 표현 확인 모달 */}
+      {interestModal && session?.user && (
+        <InterestModal
+          nickname={session.user.name || "사용자"}
+          positionTitle={interestModal.positionTitle}
+          onConfirm={handleInterestConfirm}
+          onClose={() => setInterestModal(null)}
+        />
+      )}
     </div>
   );
 }
