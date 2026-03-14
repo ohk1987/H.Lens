@@ -14,7 +14,15 @@
       "Bash(node:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /d/H.Lens/app/\\\\\\(public\\\\\\)/headhunters/)",
+      "Bash(cat /d/H.Lens/app/\\\\\\(public\\\\\\)/headhunters/\\\\[id\\\\]/page.tsx | head -200)",
+      "Bash(cat /d/H.Lens/app/\\\\\\(public\\\\\\)/firms/\\\\[id\\\\]/page.tsx | head -200)",
+      "Bash(wc -l /d/H.Lens/app/\\\\\\(public\\\\\\)/firms/\\\\[id\\\\]/page.tsx)",
+      "Bash(cat /d/H.Lens/app/\\\\\\(public\\\\\\)/firms/\\\\[id\\\\]/page.tsx)",
+      "Bash(cd D:/H.Lens && npx playwright install chromium 2>&1 | tail -5)",
+      "Bash(cd D:/H.Lens && npx playwright test tests/05-auth.spec.ts --headed 2>&1)",
+      "Bash(cd D:/H.Lens && npx playwright test --headed 2>&1)"
     ]
   }
 }
